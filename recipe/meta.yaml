@@ -29,6 +29,9 @@ outputs:
       license: BSD-3-Clause
       license_family: BSD
       summary: A meta-package to select CPU or GPU UCX build.
+    extra:
+      variants:
+        cuda_compiler_version: {{ cuda_compiler_version }}
 
   - name: ucx
     version: {{ ucx_version }}
