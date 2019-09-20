@@ -1,2 +1,4 @@
 ucx_proc_type:
 - cpu
+docker_image:
+- condaforge/linux-anvil-comp7
