@@ -39,6 +39,7 @@ outputs:
       build:
         - {{ compiler("c") }}
         - {{ compiler("cxx") }}
+        - {{ compiler("cuda") }}         # [cuda_compiler_version != ""]
         - {{ cdt("libnl") }}
         - {{ cdt("libibverbs-devel") }}
         - {{ cdt("librdmacm-devel") }}
