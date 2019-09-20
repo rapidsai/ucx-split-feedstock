@@ -1,5 +1,8 @@
 {% set ucx_version = "1.5.1" %}
-{% set number = "0" %}
+{% set number = "1" %}
+
+{% set ucx_proc_type = "cpu" %}
+
 
 package:
   name: ucx-split
