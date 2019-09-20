@@ -1,7 +1,7 @@
 {% set ucx_version = "1.5.1" %}
 {% set number = "1" %}
 
-{% set ucx_proc_type = "cpu" if cuda_compiler_version == "" else "gpu" %}
+{% set ucx_proc_type = "cpu" if cuda_compiler_version == "None" else "gpu" %}
 
 
 package:
@@ -42,7 +42,7 @@ outputs:
       build:
         - {{ compiler("c") }}
         - {{ compiler("cxx") }}
-        - {{ compiler("cuda") }}         # [cuda_compiler_version != ""]
+        - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
         - {{ cdt("libnl") }}
         - {{ cdt("libibverbs-devel") }}
         - {{ cdt("librdmacm-devel") }}
@@ -60,7 +60,7 @@ outputs:
       commands:
         - test -f "${PREFIX}/bin/ucx_info"
         # Requires driver for GPU test.
-        - ${PREFIX}/bin/ucx_info -v         # [cuda_compiler_version == ""]
+        - ${PREFIX}/bin/ucx_info -v         # [cuda_compiler_version == "None"]
     about:
       home: https://github.com/openucx/ucx
       license: BSD-3-Clause
