@@ -1,4 +1,5 @@
 {% set ucx_version = "1.5.1" %}
+{% set ucx_proc_version = "1.0.0" %}
 {% set number = "1" %}
 
 {% set ucx_proc_type = "cpu" if cuda_compiler_version == "None" else "gpu" %}
@@ -17,7 +18,7 @@ build:
 
 outputs:
   - name: ucx-proc
-    version: 1.0.0
+    version: {{ ucx_proc_version }}
     build:
       number: 0
       string: "{{ ucx_proc_type }}"
