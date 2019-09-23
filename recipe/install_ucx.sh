@@ -24,7 +24,7 @@ fi
     --disable-cma \
     --enable-mt \
     --with-gnu-ld \
-    --with-rdmacm="/usr" \
+    --with-rdmacm \
     ${CUDA_CONFIG_ARG}
 
 make -j${CPU_COUNT}
