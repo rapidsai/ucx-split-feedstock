@@ -16,7 +16,6 @@ fi
 # xref: https://github.com/openucx/ucx/issues/3391
 # xref: https://github.com/openucx/ucx/pull/3424
 
-#./autogen.sh
 ./configure \
     --build="${BUILD}" \
     --host="${HOST}" \
