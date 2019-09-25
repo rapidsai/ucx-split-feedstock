@@ -1,6 +1,6 @@
-{% set ucx_version = "1.5.1" %}
+{% set ucx_version = "1.5.2" %}
 {% set ucx_proc_version = "1.0.0" %}
-{% set number = "2" %}
+{% set number = "0" %}
 
 {% set ucx_proc_type = "cpu" if cuda_compiler_version == "None" else "gpu" %}
 
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://github.com/openucx/ucx/releases/download/v{{ ucx_version }}/ucx-{{ ucx_version }}.tar.gz
-  sha256: 567119cd80ad2ae6968ecaa4bd1d2a80afadd037ccc988740f668de10d2fdb7e
+  sha256: 1a333853069860e86ba69b8d071ccc9871209603790e2b673ec61f8086913fad
 
 build:
   skip: true  # [not linux]
