@@ -1,0 +1,22 @@
+From 263b1969dc8e673e7a43967acea3823b8d7e2815 Mon Sep 17 00:00:00 2001
+From: John Kirkham <jakirkham@gmail.com>
+Date: Wed, 25 Sep 2019 17:20:00 +0100
+Subject: [PATCH] Use abs_top_builddir in test_link_map's LDFLAGS
+
+---
+ test/apps/Makefile.am | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/apps/Makefile.am b/test/apps/Makefile.am
+index c6258b6471..4d1b7e2d88 100644
+--- a/test/apps/Makefile.am
++++ b/test/apps/Makefile.am
+@@ -33,7 +33,7 @@ test_ucp_dlopen_LDADD    = -ldl
+ test_link_map_SOURCES  = test_link_map.c
+ test_link_map_CPPFLAGS = $(BASE_CPPFLAGS)
+ test_link_map_CFLAGS   = $(BASE_CFLAGS)
+-test_link_map_LDADD    = -ldl $(top_builddir)/src/ucp/libucp.la
++test_link_map_LDADD    = -ldl $(abs_top_builddir)/src/ucp/libucp.la
+ 
+ test_dlopen_cfg_print_SOURCES  = test_dlopen_cfg_print.c
+ test_dlopen_cfg_print_CPPFLAGS = $(BASE_CPPFLAGS) -g \

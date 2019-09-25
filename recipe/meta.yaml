@@ -11,6 +11,8 @@ package:
 source:
   url: https://github.com/openucx/ucx/releases/download/v{{ ucx_version }}/ucx-{{ ucx_version }}.tar.gz
   sha256: 360e885dd7f706a19b673035a3477397d100a02eb618371697c7f3ee4e143e2c
+  patches:
+    - fixes_4218.patch
 
 build:
   skip: true  # [not linux]
