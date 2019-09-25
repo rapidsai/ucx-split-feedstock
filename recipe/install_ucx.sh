@@ -26,5 +26,5 @@ fi
     --with-rdmacm \
     ${CUDA_CONFIG_ARG}
 
-make -j${CPU_COUNT}
+make -j${CPU_COUNT} V=1
 make install
