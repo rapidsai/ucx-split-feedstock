@@ -178,4 +178,5 @@ Feedstock Maintainers
 * [@Akshay-Venkatesh](https://github.com/Akshay-Venkatesh/)
 * [@TomAugspurger](https://github.com/TomAugspurger/)
 * [@jakirkham](https://github.com/jakirkham/)
+* [@quasiben](https://github.com/quasiben/)
 
