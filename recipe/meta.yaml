@@ -1,4 +1,4 @@
-{% set ucx_version = "1.6.0" %}
+{% set ucx_version = "1.6.1" %}
 {% set ucx_proc_version = "1.0.0" %}
 {% set number = "0" %}
 
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://github.com/openucx/ucx/archive/v{{ ucx_version }}.tar.gz
-  sha256: 25395095c2604c1a0e1ce157bb224ff4be683f51f6609796d649a770d3fbce70
+  sha256: 20b2970b3e714ff2d41937e53525d49c3012df7ef7eb7fcb75ae47efd7bd1396
   patches:
     #####################################################
     # Fix a linking issue with `test_link_map`.         #
