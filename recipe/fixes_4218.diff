@@ -1,0 +1,19 @@
+diff --git a/configure.ac b/configure.ac
+index bbb3f51..781b1eb 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -82,6 +82,13 @@ AC_FUNC_STRERROR_R
+ AC_PATH_TOOL([PKG_CONFIG], [pkg-config], [pkg-config])
+ 
+ 
++#
++# Force link_all_deplibs=yes for libtool, otherwise it will not
++# link agains dependency libs
++#
++link_all_deplibs=yes
++
++
+ #
+ # Check if 'ln' supports creating relative links
+ #
+
