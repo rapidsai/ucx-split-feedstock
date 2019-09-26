@@ -12,6 +12,11 @@ source:
   url: https://github.com/openucx/ucx/archive/v{{ ucx_version }}.tar.gz
   sha256: 25395095c2604c1a0e1ce157bb224ff4be683f51f6609796d649a770d3fbce70
   patches:
+    #####################################################
+    # Fix a linking issue with `test_link_map`.         #
+    #                                                   #
+    # xref: https://github.com/openucx/ucx/issues/4218  #
+    #####################################################
     - fixes_4218.diff
 
 build:
