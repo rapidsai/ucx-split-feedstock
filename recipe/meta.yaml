@@ -1,4 +1,4 @@
-{% set ucx_version = "1.5.2" %}
+{% set ucx_version = "1.6.0" %}
 {% set ucx_proc_version = "1.0.0" %}
 {% set number = "0" %}
 
@@ -9,8 +9,15 @@ package:
   name: ucx-split
 
 source:
-  url: https://github.com/openucx/ucx/releases/download/v{{ ucx_version }}/ucx-{{ ucx_version }}.tar.gz
-  sha256: 1a333853069860e86ba69b8d071ccc9871209603790e2b673ec61f8086913fad
+  url: https://github.com/openucx/ucx/archive/v{{ ucx_version }}.tar.gz
+  sha256: 25395095c2604c1a0e1ce157bb224ff4be683f51f6609796d649a770d3fbce70
+  patches:
+    #####################################################
+    # Fix a linking issue with `test_link_map`.         #
+    #                                                   #
+    # xref: https://github.com/openucx/ucx/issues/4218  #
+    #####################################################
+    - fixes_4218.diff
 
 build:
   skip: true  # [not linux]
