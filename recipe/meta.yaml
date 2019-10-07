@@ -42,7 +42,6 @@ outputs:
     version: {{ ucx_version }}
     build:
       number: {{ number }}
-      string: "h{{ PKG_HASH }}_{{ number }}_{{ ucx_proc_type }}"
     requirements:
       build:
         - {{ compiler("c") }}
