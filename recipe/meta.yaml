@@ -40,7 +40,7 @@ outputs:
       summary: A meta-package to select CPU or GPU UCX build.
 
   - name: ucx
-    version: {{ ucx_version }}
+    version: "{{ ucx_version }}{{ number }}+g{{ ucx_commit }}"
     build:
       number: {{ number }}
     requirements:
