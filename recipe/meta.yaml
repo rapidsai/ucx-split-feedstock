@@ -1,6 +1,7 @@
-{% set ucx_version = "1.6.1" %}
+{% set ucx_version = "1.7.0.dev" %}
 {% set ucx_proc_version = "1.0.0" %}
-{% set number = "3" %}
+{% set ucx_commit = "9544fb9" %}
+{% set number = "4" %}
 
 {% set ucx_proc_type = "cpu" if cuda_compiler_version == "None" else "gpu" %}
 
@@ -9,8 +10,8 @@ package:
   name: ucx-split
 
 source:
-  url: https://github.com/openucx/ucx/archive/v{{ ucx_version }}.tar.gz
-  sha256: 20b2970b3e714ff2d41937e53525d49c3012df7ef7eb7fcb75ae47efd7bd1396
+  git_url: https://github.com/openucx/ucx
+  git_rev: {{ ucx_commit }}
   patches:
     #####################################################
     # Fix a linking issue with `test_link_map`.         #
