@@ -89,6 +89,7 @@ Current release info
 | --- | --- | --- | --- |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-ucx-green.svg)](https://anaconda.org/conda-forge/ucx) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/ucx.svg)](https://anaconda.org/conda-forge/ucx) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/ucx.svg)](https://anaconda.org/conda-forge/ucx) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/ucx.svg)](https://anaconda.org/conda-forge/ucx) |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-ucx--proc-green.svg)](https://anaconda.org/conda-forge/ucx-proc) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/ucx-proc.svg)](https://anaconda.org/conda-forge/ucx-proc) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/ucx-proc.svg)](https://anaconda.org/conda-forge/ucx-proc) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/ucx-proc.svg)](https://anaconda.org/conda-forge/ucx-proc) |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-ucx--py-green.svg)](https://anaconda.org/conda-forge/ucx-py) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/ucx-py.svg)](https://anaconda.org/conda-forge/ucx-py) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/ucx-py.svg)](https://anaconda.org/conda-forge/ucx-py) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/ucx-py.svg)](https://anaconda.org/conda-forge/ucx-py) |
 
 Installing ucx-split
 ====================
@@ -99,10 +100,10 @@ Installing `ucx-split` from the `conda-forge` channel can be achieved by adding 
 conda config --add channels conda-forge
 ```
 
-Once the `conda-forge` channel has been enabled, `ucx, ucx-proc` can be installed with:
+Once the `conda-forge` channel has been enabled, `ucx, ucx-proc, ucx-py` can be installed with:
 
 ```
-conda install ucx ucx-proc
+conda install ucx ucx-proc ucx-py
 ```
 
 It is possible to list all of the versions of `ucx` available on your platform with:
