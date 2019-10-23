@@ -1,6 +1,7 @@
-{% set ucx_version = "1.6.1" %}
+{% set ucx_version = "1.7.0.dev" %}
 {% set ucx_proc_version = "1.0.0" %}
-{% set number = "3" %}
+{% set ucx_commit = "9544fb9" %}
+{% set number = "4" %}
 
 {% set ucx_proc_type = "cpu" if cuda_compiler_version == "None" else "gpu" %}
 
@@ -9,15 +10,8 @@ package:
   name: ucx-split
 
 source:
-  url: https://github.com/openucx/ucx/archive/v{{ ucx_version }}.tar.gz
-  sha256: 20b2970b3e714ff2d41937e53525d49c3012df7ef7eb7fcb75ae47efd7bd1396
-  patches:
-    #####################################################
-    # Fix a linking issue with `test_link_map`.         #
-    #                                                   #
-    # xref: https://github.com/openucx/ucx/issues/4218  #
-    #####################################################
-    - fixes_4218.diff
+  git_url: https://github.com/openucx/ucx
+  git_rev: {{ ucx_commit }}
 
 build:
   skip: true  # [not linux]
@@ -39,7 +33,7 @@ outputs:
       summary: A meta-package to select CPU or GPU UCX build.
 
   - name: ucx
-    version: {{ ucx_version }}
+    version: "{{ ucx_version }}{{ number }}+g{{ ucx_commit }}"
     build:
       number: {{ number }}
     requirements:
