@@ -11,13 +11,6 @@ package:
 source:
   url: https://github.com/openucx/ucx/archive/v{{ ucx_version }}.tar.gz
   sha256: a9598abd5c697e4a49a512b285c5747413d1f45155a12ecb1f5ee389c0459afa
-  patches:
-    #####################################################
-    # Fix a linking issue with `test_link_map`.         #
-    #                                                   #
-    # xref: https://github.com/openucx/ucx/issues/4218  #
-    #####################################################
-    - fixes_4218.diff
 
 build:
   skip: true  # [not linux]
