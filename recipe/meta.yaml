@@ -1,6 +1,6 @@
-{% set ucx_version = "1.6.1" %}
+{% set ucx_version = "1.7.0-rc1" %}
 {% set ucx_proc_version = "1.0.0" %}
-{% set number = "3" %}
+{% set number = "0" %}
 
 {% set ucx_proc_type = "cpu" if cuda_compiler_version == "None" else "gpu" %}
 
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://github.com/openucx/ucx/archive/v{{ ucx_version }}.tar.gz
-  sha256: 20b2970b3e714ff2d41937e53525d49c3012df7ef7eb7fcb75ae47efd7bd1396
+  sha256: a9598abd5c697e4a49a512b285c5747413d1f45155a12ecb1f5ee389c0459afa
   patches:
     #####################################################
     # Fix a linking issue with `test_link_map`.         #
@@ -39,7 +39,7 @@ outputs:
       summary: A meta-package to select CPU or GPU UCX build.
 
   - name: ucx
-    version: {{ ucx_version }}
+    version: {{ ucx_version|replace("-", "") }}
     build:
       number: {{ number }}
     requirements:
