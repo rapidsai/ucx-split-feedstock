@@ -20,7 +20,7 @@ source:
       - patches/PR_4384.patch
       - patches/PR_4431.patch
   - url: https://github.com/rapidsai/ucx-py/archive/{{ ucx_py_version }}.tar.gz
-    sha256: c8b06f67d1cff2e33ce2d264c9e947e6a33b0d14b0399f66508473c65654da04
+    sha256: de0c9609cc9dc49e7c23db3452175ec7323c1fda4774765904d74d44eebd7dd6
     folder: ucx-py
 
 build:
