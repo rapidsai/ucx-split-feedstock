@@ -1,0 +1,590 @@
+From 4c5532f89ce4fef513c5d0053f4f040c9af43638 Mon Sep 17 00:00:00 2001
+From: Scott Saulters <ssaulters@nvidia.com>
+Date: Mon, 2 Sep 2019 05:42:00 -0700
+Subject: [PATCH 1/5] UCT/CUDA: CUDA_VISIBLE_DEVICES support.
+
+Adding support for accessing peers devices that are currently masked out
+by CUDA_VISIBLE_DEVICES.  This is accomplished by replacing
+cuDeviceCanAccessPeer(...) with calls to cuIpcOpenMemHandle(...).
+A caching scheme is also implemented to avoid having to close and reopen
+the handle.
+---
+ src/uct/cuda/cuda_ipc/cuda_ipc_cache.c |   8 +-
+ src/uct/cuda/cuda_ipc/cuda_ipc_iface.c |   8 +-
+ src/uct/cuda/cuda_ipc/cuda_ipc_md.c    | 204 +++++++++++++++++++++----
+ src/uct/cuda/cuda_ipc/cuda_ipc_md.h    |  26 +++-
+ 4 files changed, 209 insertions(+), 37 deletions(-)
+
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_cache.c b/src/uct/cuda/cuda_ipc/cuda_ipc_cache.c
+index e7079a53f4..0adef70165 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_cache.c
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_cache.c
+@@ -137,11 +137,17 @@ ucs_status_t uct_cuda_ipc_cache_map_memhandle(void *arg, uct_cuda_ipc_key_t *key
+             /* close memhandle */
+             UCT_CUDADRV_FUNC(cuIpcCloseMemHandle((CUdeviceptr)
+                                                  region->mapped_addr));
++            key->d_mapped = 0;
+             ucs_free(region);
+         }
+     }
+ 
+-    status = uct_cuda_ipc_open_memhandle(key->ph, (CUdeviceptr *)mapped_addr);
++    status = (key->d_mapped == 0) /* potentially already opened in rkey_unpack */
++           ? uct_cuda_ipc_open_memhandle(key->ph, &key->d_mapped)
++           : UCS_OK;
++
++    *mapped_addr = (void *)key->d_mapped;
++
+     if (ucs_unlikely(status != UCS_OK)) {
+         if (ucs_likely(status == UCS_ERR_ALREADY_EXISTS)) {
+             /* unmap all overlapping regions and retry*/
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c b/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c
+index 271a17773e..70389b95f9 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c
+@@ -346,6 +346,12 @@ static ucs_mpool_ops_t uct_cuda_ipc_event_desc_mpool_ops = {
+ ucs_status_t uct_cuda_ipc_map_memhandle(void *arg, uct_cuda_ipc_key_t *key,
+                                         void **mapped_addr)
+ {
++    if (key->d_mapped != 0) {
++        /* potentially already mapped in uct_cuda_ipc_rkey_unpack */
++        *mapped_addr = (void *) key->d_mapped;
++        return UCS_OK;
++    }
++
+     return  UCT_CUDADRV_FUNC(cuIpcOpenMemHandle((CUdeviceptr *)mapped_addr,
+                              key->ph, CU_IPC_MEM_LAZY_ENABLE_PEER_ACCESS));
+ }
+@@ -441,6 +447,6 @@ UCS_CLASS_DEFINE_NEW_FUNC(uct_cuda_ipc_iface_t, uct_iface_t, uct_md_h, uct_worke
+                           const uct_iface_params_t*, const uct_iface_config_t*);
+ static UCS_CLASS_DEFINE_DELETE_FUNC(uct_cuda_ipc_iface_t, uct_iface_t);
+ 
+-UCT_TL_DEFINE(&uct_cuda_ipc_component, cuda_ipc, uct_cuda_base_query_devices,
++UCT_TL_DEFINE(&uct_cuda_ipc_component.super, cuda_ipc, uct_cuda_base_query_devices,
+               uct_cuda_ipc_iface_t, "CUDA_IPC_", uct_cuda_ipc_iface_config_table,
+               uct_cuda_ipc_iface_config_t);
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_md.c b/src/uct/cuda/cuda_ipc/cuda_ipc_md.c
+index d7d6bd5ffa..37a66359bb 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_md.c
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_md.c
+@@ -15,7 +15,6 @@
+ #include <sys/types.h>
+ #include <unistd.h>
+ 
+-
+ static ucs_config_field_t uct_cuda_ipc_md_config_table[] = {
+     {"", "", NULL,
+      ucs_offsetof(uct_cuda_ipc_md_config_t, super), UCS_CONFIG_TYPE_TABLE(uct_md_config_table)},
+@@ -45,11 +44,105 @@ static ucs_status_t uct_cuda_ipc_mkey_pack(uct_md_h md, uct_mem_h memh,
+     uct_cuda_ipc_key_t *packed   = (uct_cuda_ipc_key_t *) rkey_buffer;
+     uct_cuda_ipc_key_t *mem_hndl = (uct_cuda_ipc_key_t *) memh;
+ 
+-    *packed = *mem_hndl;
++    *packed          = *mem_hndl;
++    packed->d_mapped = 0;
++
++    return cuDeviceGetUuid(&packed->uuid, mem_hndl->dev_num) == CUDA_SUCCESS
++           ? UCS_OK : UCS_ERR_IO_ERROR;
++}
++
++static inline int uuid_equals(const CUuuid* a, const CUuuid* b)
++{
++    int64_t *a0 = (int64_t *) a->bytes;
++    int64_t *b0 = (int64_t *) b->bytes;
++    return (a0[0] == b0[0]) && (a0[1] == b0[1]) ? 1 : 0;
++}
++
++static inline void uuid_copy(CUuuid* dst, const CUuuid* src)
++{
++    int64_t *a = (int64_t *) src->bytes;
++    int64_t *b = (int64_t *) dst->bytes;
++    *b++ = *a++;
++    *b   = *a;
++}
++
++static ucs_status_t get_unique_index_for_uuid(int* idx,
++                                              uct_cuda_ipc_md_t* md,
++                                              CUuuid* uuid)
++{
++    int i;
++
++    for (i = 0; i < md->uuid_map_size; i++) {
++        if (uuid_equals(uuid, &md->uuid_map[i])) {
++            *idx = i;
++            return UCS_OK; /* found */
++        }
++    }
++
++    if (ucs_unlikely(md->uuid_map_size == md->uuid_map_capacity)) {
++        /* reallocate on demand */
++        int num_devices;
++        int original_cache_size, new_cache_size;
++        int new_capacity = md->uuid_map_capacity * 2;
++
++        UCT_CUDA_IPC_DEVICE_GET_COUNT(num_devices);
++        original_cache_size   = md->uuid_map_capacity * num_devices;
++        new_cache_size        = new_capacity * num_devices;
++        md->uuid_map_capacity = new_capacity;
++        md->uuid_map          = ucs_realloc(md->uuid_map,
++                                            new_capacity * sizeof(CUuuid),
++                                            "uct_cuda_ipc_uuid_map");
++        if (md->uuid_map == NULL) {
++            return UCS_ERR_NO_MEMORY;
++        }
++
++        md->peer_accessible_cache = ucs_realloc(md->peer_accessible_cache,
++                                                new_cache_size);
++        if (md->peer_accessible_cache == NULL) {
++            return UCS_ERR_NO_MEMORY;
++        }
++
++        memset(md->peer_accessible_cache + original_cache_size, 0xFF,
++               new_cache_size - original_cache_size);
++    }
++
++    /* Add new mapping */
++    uuid_copy(&md->uuid_map[md->uuid_map_size], uuid);
++    *idx = md->uuid_map_size++;
+ 
+     return UCS_OK;
+ }
+ 
++static ucs_status_t uct_cuda_ipc_is_peer_accessible(uct_cuda_ipc_component_t *mdc,
++                                                    uct_cuda_ipc_key_t *rkey)
++{
++    CUdevice this_device;
++    ucs_status_t status;
++    int peer_idx;
++    int num_devices;
++    char* accessible;
++
++    status = get_unique_index_for_uuid(&peer_idx, mdc->md, &rkey->uuid);
++    if (ucs_unlikely(status != UCS_OK)) {
++        return status;
++    }
++
++    UCT_CUDA_IPC_GET_DEVICE(this_device);
++    UCT_CUDA_IPC_DEVICE_GET_COUNT(num_devices);
++
++    accessible = &mdc->md->peer_accessible_cache[peer_idx * num_devices + this_device];
++    if (*accessible == -1) { /* unchecked, add to cache */
++        /* rkey->d_mapped is picked up in uct_cuda_ipc_cache_map_memhandle */
++        CUresult result = cuIpcOpenMemHandle(&rkey->d_mapped,
++                                             rkey->ph,
++                                             CU_IPC_MEM_LAZY_ENABLE_PEER_ACCESS);
++        *accessible = (result != CUDA_SUCCESS && result != CUDA_ERROR_ALREADY_MAPPED)
++                    ? 0 : 1;
++    }
++
++    return (*accessible == 1) ? UCS_OK : UCS_ERR_UNREACHABLE;
++}
++
+ static ucs_status_t uct_cuda_ipc_rkey_unpack(uct_component_t *component,
+                                              const void *rkey_buffer,
+                                              uct_rkey_t *rkey_p, void **handle_p)
+@@ -57,15 +150,12 @@ static ucs_status_t uct_cuda_ipc_rkey_unpack(uct_component_t *component,
+     uct_cuda_ipc_key_t *packed = (uct_cuda_ipc_key_t *) rkey_buffer;
+     uct_cuda_ipc_key_t *key;
+     ucs_status_t status;
+-    CUdevice cu_device;
+-    int peer_accessble;
++    uct_cuda_ipc_component_t *com = ucs_derived_of(component, uct_cuda_ipc_component_t);
+ 
+-    UCT_CUDA_IPC_GET_DEVICE(cu_device);
++    status = uct_cuda_ipc_is_peer_accessible(com, packed);
+ 
+-    status = UCT_CUDADRV_FUNC(cuDeviceCanAccessPeer(&peer_accessble,
+-                                                    cu_device, packed->dev_num));
+-    if ((status != UCS_OK) || (peer_accessble == 0)) {
+-        return UCS_ERR_UNREACHABLE;
++    if (status != UCS_OK) {
++        return status;
+     }
+ 
+     key = ucs_malloc(sizeof(uct_cuda_ipc_key_t), "uct_cuda_ipc_key_t");
+@@ -111,6 +201,7 @@ uct_cuda_ipc_mem_reg_internal(uct_md_h uct_md, void *addr, size_t length,
+                                           &(key->b_len),
+                                           (CUdeviceptr) addr));
+     key->dev_num  = (int) cu_device;
++    key->d_mapped = 0;
+     ucs_trace("registered memory:%p..%p length:%lu dev_num:%d",
+               addr, addr + length, length, (int) cu_device);
+     return UCS_OK;
+@@ -142,43 +233,94 @@ static ucs_status_t uct_cuda_ipc_mem_dereg(uct_md_h md, uct_mem_h memh)
+     return UCS_OK;
+ }
+ 
++
++static void uct_cuda_ipc_md_close(uct_md_h uct_md)
++{
++    uct_cuda_ipc_md_t *md = ucs_derived_of(uct_md, uct_cuda_ipc_md_t);
++
++    if (md->uuid_map) {
++        ucs_free(md->uuid_map);
++    }
++
++    if (md->peer_accessible_cache) {
++        ucs_free(md->peer_accessible_cache);
++    }
++
++    ucs_free(md);
++}
++
+ static ucs_status_t
+ uct_cuda_ipc_md_open(uct_component_t *component, const char *md_name,
+                      const uct_md_config_t *config, uct_md_h *md_p)
+ {
+     static uct_md_ops_t md_ops = {
+-        .close              = (void*)ucs_empty_function,
++        .close              = uct_cuda_ipc_md_close,
+         .query              = uct_cuda_ipc_md_query,
+         .mkey_pack          = uct_cuda_ipc_mkey_pack,
+         .mem_reg            = uct_cuda_ipc_mem_reg,
+         .mem_dereg          = uct_cuda_ipc_mem_dereg,
+         .detect_memory_type = ucs_empty_function_return_unsupported,
+     };
+-    static uct_md_t md = {
+-        .ops          = &md_ops,
+-        .component    = &uct_cuda_ipc_component
+-    };
+ 
+-    *md_p = &md;
++    int num_devices;
++    uct_cuda_ipc_md_t* md;
++    uct_cuda_ipc_component_t* com;
++
++    UCS_STATIC_ASSERT(sizeof(md->peer_accessible_cache[0]) == sizeof(char));
++    UCT_CUDA_IPC_DEVICE_GET_COUNT(num_devices);
++
++    md = ucs_calloc(1, sizeof(uct_cuda_ipc_md_t));
++    if (md == NULL) {
++        return UCS_ERR_NO_MEMORY;
++    }
++
++    md->super.ops       = &md_ops;
++    md->super.component = &uct_cuda_ipc_component.super;
++
++    /* allocate uuid map and peer accessible cache */
++    md->uuid_map_size     = 0;
++    md->uuid_map_capacity = 16;
++    md->uuid_map          = ucs_malloc(md->uuid_map_capacity * sizeof(CUuuid),
++                                       "uct_cuda_ipc_uuid_map");
++    if (md->uuid_map == NULL) {
++        return UCS_ERR_NO_MEMORY;
++    }
++
++    /* Initially support caching accessibility of up to 16 other peers */
++    md->peer_accessible_cache = ucs_malloc(num_devices * md->uuid_map_capacity,
++                                           "uct_cuda_ipc_peer_accessible_cache");
++    if (md->peer_accessible_cache == NULL) {
++        return UCS_ERR_NO_MEMORY;
++    }
++
++    /* 0xFF = !cached, 1 = accessible, 0 = !accessible */
++    memset(md->peer_accessible_cache, 0xFF, num_devices * md->uuid_map_capacity);
++
++    com     = ucs_derived_of(md->super.component, uct_cuda_ipc_component_t);
++    com->md = md;
++    *md_p   = &md->super;
+     return UCS_OK;
+ }
+ 
+-uct_component_t uct_cuda_ipc_component = {
+-    .query_md_resources = uct_cuda_base_query_md_resources,
+-    .md_open            = uct_cuda_ipc_md_open,
+-    .cm_open            = ucs_empty_function_return_unsupported,
+-    .rkey_unpack        = uct_cuda_ipc_rkey_unpack,
+-    .rkey_ptr           = ucs_empty_function_return_unsupported,
+-    .rkey_release       = uct_cuda_ipc_rkey_release,
+-    .name               = "cuda_ipc",
+-    .md_config          = {
+-        .name           = "Cuda-IPC memory domain",
+-        .prefix         = "CUDA_IPC_",
+-        .table          = uct_cuda_ipc_md_config_table,
+-        .size           = sizeof(uct_cuda_ipc_md_config_t),
++uct_cuda_ipc_component_t uct_cuda_ipc_component = {
++    .super = {
++        .query_md_resources = uct_cuda_base_query_md_resources,
++        .md_open            = uct_cuda_ipc_md_open,
++        .cm_open            = ucs_empty_function_return_unsupported,
++        .rkey_unpack        = uct_cuda_ipc_rkey_unpack,
++        .rkey_ptr           = ucs_empty_function_return_unsupported,
++        .rkey_release       = uct_cuda_ipc_rkey_release,
++        .name               = "cuda_ipc",
++        .md_config          = {
++            .name           = "Cuda-IPC memory domain",
++            .prefix         = "CUDA_IPC_",
++            .table          = uct_cuda_ipc_md_config_table,
++            .size           = sizeof(uct_cuda_ipc_md_config_t),
++        },
++        .tl_list            = UCT_COMPONENT_TL_LIST_INITIALIZER(&uct_cuda_ipc_component.super),
++        .flags              = 0
+     },
+-    .tl_list            = UCT_COMPONENT_TL_LIST_INITIALIZER(&uct_cuda_ipc_component),
+-    .flags              = 0
++    .md                     = NULL,
+ };
+-UCT_COMPONENT_REGISTER(&uct_cuda_ipc_component);
++UCT_COMPONENT_REGISTER(&uct_cuda_ipc_component.super);
+ 
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_md.h b/src/uct/cuda/cuda_ipc/cuda_ipc_md.h
+index bca2430eb4..3d0f5c9b99 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_md.h
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_md.h
+@@ -14,17 +14,26 @@
+ 
+ #define UCT_CUDA_IPC_MAX_ALLOC_SZ (1 << 30)
+ 
+-
+-extern uct_component_t uct_cuda_ipc_component;
+-
+-
+ /**
+  * @brief cuda ipc MD descriptor
+  */
+ typedef struct uct_cuda_ipc_md {
+     struct uct_md super;   /**< Domain info */
++    CUuuid*       uuid_map;
++    char*         peer_accessible_cache;
++    int           uuid_map_size;
++    int           uuid_map_capacity;
+ } uct_cuda_ipc_md_t;
+ 
++/**
++ * @brief cuda ipc component extension
++ */
++typedef struct uct_cuda_ipc_component {
++    struct uct_component  super;
++    uct_cuda_ipc_md_t*	  md;
++} uct_cuda_ipc_component_t;
++
++extern uct_cuda_ipc_component_t uct_cuda_ipc_component;
+ 
+ /**
+  * @brief cuda ipc domain configuration.
+@@ -42,6 +51,8 @@ typedef struct uct_cuda_ipc_key {
+     CUdeviceptr    d_bptr;       /* Allocation base address */
+     size_t         b_len;        /* Allocation size */
+     int            dev_num;      /* GPU Device number */
++    CUuuid         uuid;         /* GPU Device UUID */
++    CUdeviceptr    d_mapped;     /* Locally mapped device address */
+ } uct_cuda_ipc_key_t;
+ 
+ 
+@@ -52,4 +63,11 @@ typedef struct uct_cuda_ipc_key {
+         }                                                               \
+     } while(0);
+ 
++#define UCT_CUDA_IPC_DEVICE_GET_COUNT(_num_device)                        \
++    do {                                                                  \
++        if (UCS_OK != UCT_CUDADRV_FUNC(cuDeviceGetCount(&_num_device))) { \
++            return UCS_ERR_IO_ERROR;                                      \
++        }                                                                 \
++    } while(0);
++
+ #endif
+
+From 4e53d1977100e788078a10e8eede6af24fe5479c Mon Sep 17 00:00:00 2001
+From: Scott Saulters <ssaulters@nvidia.com>
+Date: Thu, 5 Sep 2019 00:30:42 -0700
+Subject: [PATCH 2/5] UCT/CUDA: CUDA_VISIBLE_DEVICES support.
+
+- Adding uct_cuda_ipc_* prefixes to functions.
+---
+ src/uct/cuda/cuda_ipc/cuda_ipc_md.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_md.c b/src/uct/cuda/cuda_ipc/cuda_ipc_md.c
+index 37a66359bb..1c39a1a3be 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_md.c
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_md.c
+@@ -51,14 +51,14 @@ static ucs_status_t uct_cuda_ipc_mkey_pack(uct_md_h md, uct_mem_h memh,
+            ? UCS_OK : UCS_ERR_IO_ERROR;
+ }
+ 
+-static inline int uuid_equals(const CUuuid* a, const CUuuid* b)
++static inline int uct_cuda_ipc_uuid_equals(const CUuuid* a, const CUuuid* b)
+ {
+     int64_t *a0 = (int64_t *) a->bytes;
+     int64_t *b0 = (int64_t *) b->bytes;
+     return (a0[0] == b0[0]) && (a0[1] == b0[1]) ? 1 : 0;
+ }
+ 
+-static inline void uuid_copy(CUuuid* dst, const CUuuid* src)
++static inline void uct_cuda_ipc_uuid_copy(CUuuid* dst, const CUuuid* src)
+ {
+     int64_t *a = (int64_t *) src->bytes;
+     int64_t *b = (int64_t *) dst->bytes;
+@@ -66,14 +66,14 @@ static inline void uuid_copy(CUuuid* dst, const CUuuid* src)
+     *b   = *a;
+ }
+ 
+-static ucs_status_t get_unique_index_for_uuid(int* idx,
+-                                              uct_cuda_ipc_md_t* md,
+-                                              CUuuid* uuid)
++static ucs_status_t uct_cuda_ipc_get_unique_index_for_uuid(int* idx,
++                                                           uct_cuda_ipc_md_t* md,
++                                                           CUuuid* uuid)
+ {
+     int i;
+ 
+     for (i = 0; i < md->uuid_map_size; i++) {
+-        if (uuid_equals(uuid, &md->uuid_map[i])) {
++        if (uct_cuda_ipc_uuid_equals(uuid, &md->uuid_map[i])) {
+             *idx = i;
+             return UCS_OK; /* found */
+         }
+@@ -107,7 +107,7 @@ static ucs_status_t get_unique_index_for_uuid(int* idx,
+     }
+ 
+     /* Add new mapping */
+-    uuid_copy(&md->uuid_map[md->uuid_map_size], uuid);
++    uct_cuda_ipc_uuid_copy(&md->uuid_map[md->uuid_map_size], uuid);
+     *idx = md->uuid_map_size++;
+ 
+     return UCS_OK;
+@@ -122,7 +122,7 @@ static ucs_status_t uct_cuda_ipc_is_peer_accessible(uct_cuda_ipc_component_t *md
+     int num_devices;
+     char* accessible;
+ 
+-    status = get_unique_index_for_uuid(&peer_idx, mdc->md, &rkey->uuid);
++    status = uct_cuda_ipc_get_unique_index_for_uuid(&peer_idx, mdc->md, &rkey->uuid);
+     if (ucs_unlikely(status != UCS_OK)) {
+         return status;
+     }
+
+From 87596025c2ed21ddfd0c2ff9eb5d0d84e9d54108 Mon Sep 17 00:00:00 2001
+From: Scott Saulters <ssaulters@nvidia.com>
+Date: Wed, 18 Sep 2019 22:24:58 -0700
+Subject: [PATCH 3/5] UCT/CUDA: CUDA_VISIBLE_DEVICES support.
+
+- Adding memtracking parameter to calloc/realloc.
+---
+ src/uct/cuda/cuda_ipc/cuda_ipc_md.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_md.c b/src/uct/cuda/cuda_ipc/cuda_ipc_md.c
+index 1c39a1a3be..a63836b6b8 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_md.c
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_md.c
+@@ -97,7 +97,8 @@ static ucs_status_t uct_cuda_ipc_get_unique_index_for_uuid(int* idx,
+         }
+ 
+         md->peer_accessible_cache = ucs_realloc(md->peer_accessible_cache,
+-                                                new_cache_size);
++                                                new_cache_size,
++                                                "uct_cuda_ipc_peer_accessible_cache");
+         if (md->peer_accessible_cache == NULL) {
+             return UCS_ERR_NO_MEMORY;
+         }
+@@ -269,7 +270,7 @@ uct_cuda_ipc_md_open(uct_component_t *component, const char *md_name,
+     UCS_STATIC_ASSERT(sizeof(md->peer_accessible_cache[0]) == sizeof(char));
+     UCT_CUDA_IPC_DEVICE_GET_COUNT(num_devices);
+ 
+-    md = ucs_calloc(1, sizeof(uct_cuda_ipc_md_t));
++    md = ucs_calloc(1, sizeof(uct_cuda_ipc_md_t), "uct_cuda_ipc_md");
+     if (md == NULL) {
+         return UCS_ERR_NO_MEMORY;
+     }
+
+From 96316a341ed7551a34b7262b5d6221a58cde5765 Mon Sep 17 00:00:00 2001
+From: Scott Saulters <ssaulters@nvidia.com>
+Date: Mon, 7 Oct 2019 11:01:45 -0700
+Subject: [PATCH 4/5] UCT/CUDA: CUDA_VISIBLE_DEVICES support.
+
+- some cosmetic changes.
+---
+ src/uct/cuda/cuda_ipc/cuda_ipc_md.c | 16 +++++-----------
+ src/uct/cuda/cuda_ipc/cuda_ipc_md.h |  4 ++--
+ 2 files changed, 7 insertions(+), 13 deletions(-)
+
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_md.c b/src/uct/cuda/cuda_ipc/cuda_ipc_md.c
+index a63836b6b8..e7b5fcf4e5 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_md.c
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_md.c
+@@ -137,7 +137,7 @@ static ucs_status_t uct_cuda_ipc_is_peer_accessible(uct_cuda_ipc_component_t *md
+         CUresult result = cuIpcOpenMemHandle(&rkey->d_mapped,
+                                              rkey->ph,
+                                              CU_IPC_MEM_LAZY_ENABLE_PEER_ACCESS);
+-        *accessible = (result != CUDA_SUCCESS && result != CUDA_ERROR_ALREADY_MAPPED)
++        *accessible = ((result != CUDA_SUCCESS) && (result != CUDA_ERROR_ALREADY_MAPPED))
+                     ? 0 : 1;
+     }
+ 
+@@ -148,10 +148,10 @@ static ucs_status_t uct_cuda_ipc_rkey_unpack(uct_component_t *component,
+                                              const void *rkey_buffer,
+                                              uct_rkey_t *rkey_p, void **handle_p)
+ {
+-    uct_cuda_ipc_key_t *packed = (uct_cuda_ipc_key_t *) rkey_buffer;
++    uct_cuda_ipc_component_t *com = ucs_derived_of(component, uct_cuda_ipc_component_t);
++    uct_cuda_ipc_key_t *packed    = (uct_cuda_ipc_key_t *) rkey_buffer;
+     uct_cuda_ipc_key_t *key;
+     ucs_status_t status;
+-    uct_cuda_ipc_component_t *com = ucs_derived_of(component, uct_cuda_ipc_component_t);
+ 
+     status = uct_cuda_ipc_is_peer_accessible(com, packed);
+ 
+@@ -239,14 +239,8 @@ static void uct_cuda_ipc_md_close(uct_md_h uct_md)
+ {
+     uct_cuda_ipc_md_t *md = ucs_derived_of(uct_md, uct_cuda_ipc_md_t);
+ 
+-    if (md->uuid_map) {
+-        ucs_free(md->uuid_map);
+-    }
+-
+-    if (md->peer_accessible_cache) {
+-        ucs_free(md->peer_accessible_cache);
+-    }
+-
++    ucs_free(md->uuid_map);
++    ucs_free(md->peer_accessible_cache);
+     ucs_free(md);
+ }
+ 
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_md.h b/src/uct/cuda/cuda_ipc/cuda_ipc_md.h
+index 3d0f5c9b99..cb26a410cc 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_md.h
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_md.h
+@@ -29,8 +29,8 @@ typedef struct uct_cuda_ipc_md {
+  * @brief cuda ipc component extension
+  */
+ typedef struct uct_cuda_ipc_component {
+-    struct uct_component  super;
+-    uct_cuda_ipc_md_t*	  md;
++    uct_component_t    super;
++    uct_cuda_ipc_md_t* md;
+ } uct_cuda_ipc_component_t;
+ 
+ extern uct_cuda_ipc_component_t uct_cuda_ipc_component;
+
+From e3666e21568eae9ac4e62395016ee2cad255be80 Mon Sep 17 00:00:00 2001
+From: Scott Saulters <ssaulters@nvidia.com>
+Date: Mon, 7 Oct 2019 17:56:52 -0700
+Subject: [PATCH 5/5] UCT/CUDA: CUDA_VISIBLE_DEVICES support - fixing potential
+ memleak.
+
+---
+ src/uct/cuda/cuda_ipc/cuda_ipc_md.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_md.c b/src/uct/cuda/cuda_ipc/cuda_ipc_md.c
+index e7b5fcf4e5..d7b79b9f9b 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_md.c
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_md.c
+@@ -278,6 +278,7 @@ uct_cuda_ipc_md_open(uct_component_t *component, const char *md_name,
+     md->uuid_map          = ucs_malloc(md->uuid_map_capacity * sizeof(CUuuid),
+                                        "uct_cuda_ipc_uuid_map");
+     if (md->uuid_map == NULL) {
++        free(md);
+         return UCS_ERR_NO_MEMORY;
+     }
+ 
+@@ -285,6 +286,8 @@ uct_cuda_ipc_md_open(uct_component_t *component, const char *md_name,
+     md->peer_accessible_cache = ucs_malloc(num_devices * md->uuid_map_capacity,
+                                            "uct_cuda_ipc_peer_accessible_cache");
+     if (md->peer_accessible_cache == NULL) {
++        free(md->uuid_map);
++        free(md);
+         return UCS_ERR_NO_MEMORY;
+     }
+ 
