@@ -1,7 +1,7 @@
 {% set ucx_version = "1.7.0-rc1" %}
 {% set ucx_proc_version = "1.0.0" %}
 {% set ucx_py_version = "0.2" %}
-{% set number = "1" %}
+{% set number = "2" %}
 
 {% set ucx_proc_type = "cpu" if cuda_compiler_version == "None" else "gpu" %}
 
