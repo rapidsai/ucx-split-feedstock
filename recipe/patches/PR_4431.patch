@@ -1,0 +1,145 @@
+From 97f71decb30aa74296d8a01e99b0d61e92f75e71 Mon Sep 17 00:00:00 2001
+From: Peter Andreas Entschev <peter@entschev.com>
+Date: Mon, 11 Nov 2019 13:39:22 -0800
+Subject: [PATCH] UCT/CUDA_IPC: Fix multiple calls to `cuIpcCloseMemHandle`
+
+Multiple calls to `cuIpcCloseMemHandle` occur when transferring memory
+buffers larger than 1GB, as such buffers will be copied in 1GB blocks
+and each will attempt to unmap the memory handle that is still at use.
+This fix adds a callback function to the `uct_cuda_ipc_key` struct
+that only gets called upon release of the object.
+---
+ src/uct/cuda/cuda_ipc/cuda_ipc_iface.c | 28 ++++++++++++++++----------
+ src/uct/cuda/cuda_ipc/cuda_ipc_md.c    | 16 +++++++++++++--
+ src/uct/cuda/cuda_ipc/cuda_ipc_md.h    | 22 ++++++++++++++------
+ 3 files changed, 47 insertions(+), 19 deletions(-)
+
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c b/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c
+index 70389b95f9..21c7752a91 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c
+@@ -203,11 +203,6 @@ uct_cuda_ipc_progress_event_q(uct_cuda_ipc_iface_t *iface,
+             uct_invoke_completion(cuda_ipc_event->comp, UCS_OK);
+         }
+ 
+-        status = iface->unmap_memhandle(cuda_ipc_event->mapped_addr);
+-        if (status != UCS_OK) {
+-            ucs_fatal("failed to unmap addr:%p", cuda_ipc_event->mapped_addr);
+-        }
+-
+         ucs_trace_poll("CUDA_IPC Event Done :%p", cuda_ipc_event);
+         ucs_mpool_put(cuda_ipc_event);
+         count++;
+@@ -343,22 +338,33 @@ static ucs_mpool_ops_t uct_cuda_ipc_event_desc_mpool_ops = {
+     .obj_cleanup   = uct_cuda_ipc_event_desc_cleanup,
+ };
+ 
++ucs_status_t uct_cuda_ipc_unmap_memhandle(void *mapped_addr)
++{
++    return UCT_CUDADRV_FUNC(cuIpcCloseMemHandle((CUdeviceptr)mapped_addr));
++}
++
+ ucs_status_t uct_cuda_ipc_map_memhandle(void *arg, uct_cuda_ipc_key_t *key,
+                                         void **mapped_addr)
+ {
++    if (key->unmap_memhandle_func == NULL) {
++        key->unmap_memhandle_func = uct_cuda_ipc_unmap_memhandle;
++    }
++
+     if (key->d_mapped != 0) {
+         /* potentially already mapped in uct_cuda_ipc_rkey_unpack */
+         *mapped_addr = (void *) key->d_mapped;
+         return UCS_OK;
+     }
+ 
+-    return  UCT_CUDADRV_FUNC(cuIpcOpenMemHandle((CUdeviceptr *)mapped_addr,
+-                             key->ph, CU_IPC_MEM_LAZY_ENABLE_PEER_ACCESS));
+-}
++    ucs_status_t status = UCT_CUDADRV_FUNC(cuIpcOpenMemHandle((CUdeviceptr *)mapped_addr,
++                                           key->ph, CU_IPC_MEM_LAZY_ENABLE_PEER_ACCESS));
+ 
+-ucs_status_t uct_cuda_ipc_unmap_memhandle(void *mapped_addr)
+-{
+-    return UCT_CUDADRV_FUNC(cuIpcCloseMemHandle((CUdeviceptr)mapped_addr));
++    /* Store mapped memory handle to use when copying remaining blocks */
++    if ((status == UCS_OK) && (key->d_mapped == 0)) {
++        key->d_mapped = (CUdeviceptr)*mapped_addr;
++    }
++
++    return status;
+ }
+ 
+ static UCS_CLASS_INIT_FUNC(uct_cuda_ipc_iface_t, uct_md_h md, uct_worker_h worker,
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_md.c b/src/uct/cuda/cuda_ipc/cuda_ipc_md.c
+index 0dba9977bf..bde1d8089b 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_md.c
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_md.c
+@@ -44,8 +44,9 @@ static ucs_status_t uct_cuda_ipc_mkey_pack(uct_md_h md, uct_mem_h memh,
+     uct_cuda_ipc_key_t *packed   = (uct_cuda_ipc_key_t *) rkey_buffer;
+     uct_cuda_ipc_key_t *mem_hndl = (uct_cuda_ipc_key_t *) memh;
+ 
+-    *packed          = *mem_hndl;
+-    packed->d_mapped = 0;
++    *packed                      = *mem_hndl;
++    packed->d_mapped             = 0;
++    packed->unmap_memhandle_func = NULL;
+ 
+     return UCT_CUDADRV_FUNC(cuDeviceGetUuid(&packed->uuid, mem_hndl->dev_num));
+ }
+@@ -173,7 +174,18 @@ static ucs_status_t uct_cuda_ipc_rkey_unpack(uct_component_t *component,
+ static ucs_status_t uct_cuda_ipc_rkey_release(uct_component_t *component,
+                                               uct_rkey_t rkey, void *handle)
+ {
++    uct_cuda_ipc_key_t *key = (uct_cuda_ipc_key_t *) rkey;
++
+     ucs_assert(NULL == handle);
++
++    if ((key->unmap_memhandle_func != NULL) && (key->d_mapped != 0)) {
++        ucs_trace("unmapping addr: %p", (void *)key->d_mapped);
++        ucs_status_t status = key->unmap_memhandle_func((void *)key->d_mapped);
++        if (status != UCS_OK) {
++            ucs_fatal("failed to unmap addr: %p", (void *)key->d_mapped);
++        }
++    }
++
+     ucs_free((void *)rkey);
+     return UCS_OK;
+ }
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_md.h b/src/uct/cuda/cuda_ipc/cuda_ipc_md.h
+index cb26a410cc..ece21ba92e 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_md.h
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_md.h
+@@ -42,17 +42,27 @@ typedef struct uct_cuda_ipc_md_config {
+     uct_md_config_t super;
+ } uct_cuda_ipc_md_config_t;
+ 
++/**
++ * Function to unmap a CUDA IPC memory handle.
++ *
++ * @param [in]  mapped_addr             Pointer to CUDA IPC memory handle to
++ *                                      be released.
++ *
++ * @return UCS_OK on success or error code in case of failure.
++ */
++typedef ucs_status_t (*uct_cuda_ipc_unmap_memhandle_func_t)(void *mapped_addr);
+ 
+ /**
+  * @brief cuda_ipc packed and remote key for put/get
+  */
+ typedef struct uct_cuda_ipc_key {
+-    CUipcMemHandle ph;           /* Memory handle of GPU memory */
+-    CUdeviceptr    d_bptr;       /* Allocation base address */
+-    size_t         b_len;        /* Allocation size */
+-    int            dev_num;      /* GPU Device number */
+-    CUuuid         uuid;         /* GPU Device UUID */
+-    CUdeviceptr    d_mapped;     /* Locally mapped device address */
++    CUipcMemHandle                      ph;                   /* Memory handle of GPU memory */
++    CUdeviceptr                         d_bptr;               /* Allocation base address */
++    size_t                              b_len;                /* Allocation size */
++    int                                 dev_num;              /* GPU Device number */
++    CUuuid                              uuid;                 /* GPU Device UUID */
++    CUdeviceptr                         d_mapped;             /* Locally mapped device address */
++    uct_cuda_ipc_unmap_memhandle_func_t unmap_memhandle_func; /* Memory handle unmap function */
+ } uct_cuda_ipc_key_t;
+ 
+ 
