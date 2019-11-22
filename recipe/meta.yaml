@@ -1,6 +1,6 @@
 {% set ucx_version = "1.7.0-rc1" %}
 {% set ucx_proc_version = "1.0.0" %}
-{% set ucx_py_version = "0.2" %}
+{% set ucx_py_version = "0.3" %}
 {% set number = "2" %}
 
 {% set ucx_proc_type = "cpu" if cuda_compiler_version == "None" else "gpu" %}
@@ -20,7 +20,7 @@ source:
       - patches/PR_4384.patch
       - patches/PR_4431.patch
   - url: https://github.com/rapidsai/ucx-py/archive/{{ ucx_py_version }}.tar.gz
-    sha256: de0c9609cc9dc49e7c23db3452175ec7323c1fda4774765904d74d44eebd7dd6
+    sha256: 379a77cb1192a783646f6bf79e37298ef4e2970c6258051599586c6e511f50f0
     folder: ucx-py
 
 build:
