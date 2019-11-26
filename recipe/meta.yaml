@@ -31,7 +31,6 @@ build:
     - UCX_PY_VERSION
     - UCX_PY_COMMIT
     - BUILD_NUMBER
-    - CUDA_HOME
 
 outputs:
   - name: ucx-proc
@@ -53,6 +52,8 @@ outputs:
     build:
       number: {{ number }}
       string: cuda{{ cuda_version }}_{{ number }}
+      script_env:
+        - CUDA_HOME
     requirements:
       build:
         - {{ compiler("c") }}
@@ -89,6 +90,8 @@ outputs:
       number: {{ number }}
       string: py{{ py_version }}_{{ number }}
       skip: true  # [py<36]
+      script_env:
+        - CUDA_HOME
       ignore_run_exports:
         - cudatoolkit                    # [cuda_compiler_version != "None"]
     requirements:
