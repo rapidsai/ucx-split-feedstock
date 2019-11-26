@@ -4,6 +4,8 @@
 {% set ucx_py_version = environ.get("UCX_PY_VERSION", "0.1+179.g993ab90") %}
 {% set ucx_py_commit = environ.get("UCX_PY_COMMIT", "993ab90") %}
 {% set number = environ.get("BUILD_NUMBER", 0) %}
+{% set cuda_version = '.'.join(environ.get('CUDA_VERSION', '9.2').split('.')[:2]) %}
+{% set py_version = environ.get('CONDA_PY', 36) %}
 
 {% set ucx_proc_type = "cpu" if cuda_compiler_version == "None" else "gpu" %}
 
@@ -49,6 +51,7 @@ outputs:
     version: "{{ ucx_version }}{{ number }}+g{{ ucx_commit }}"
     build:
       number: {{ number }}
+      string: cuda{{ cuda_version }}_{{ number }}
       script_env:
         - CUDA_HOME
     requirements:
@@ -85,6 +88,7 @@ outputs:
     version: "{{ ucx_py_version }}"
     build:
       number: {{ number }}
+      string: py{{ py_version }}_{{ number }}
       skip: true  # [py<36]
       ignore_run_exports:
         - cudatoolkit                    # [cuda_compiler_version != "None"]
