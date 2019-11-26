@@ -42,6 +42,8 @@ outputs:
     version: "{{ ucx_version }}{{ number }}+g{{ ucx_commit }}"
     build:
       number: {{ number }}
+      script_env:
+        - CUDA_HOME
     requirements:
       build:
         - {{ compiler("c") }}
@@ -79,6 +81,8 @@ outputs:
       skip: true  # [py<36]
       ignore_run_exports:
         - cudatoolkit                    # [cuda_compiler_version != "None"]
+      script_env:
+        - CUDA_HOME
     requirements:
       build:
         - {{ compiler("c") }}
