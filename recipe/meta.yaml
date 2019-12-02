@@ -103,8 +103,8 @@ outputs:
         - {{ cdt("libnl") }}
         - {{ cdt("libibverbs") }}
         - {{ cdt("librdmacm") }}
-        - libhwloc
       host:
+        - libhwloc
         - python
         - pip
         - cython
