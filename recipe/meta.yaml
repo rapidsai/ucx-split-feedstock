@@ -65,6 +65,7 @@ outputs:
         - {{ cdt("numactl-devel") }}
         - automake
         - autoconf
+        - libhwloc
         - libtool
         - make
         - pkg-config
@@ -102,6 +103,7 @@ outputs:
         - {{ cdt("libnl") }}
         - {{ cdt("libibverbs") }}
         - {{ cdt("librdmacm") }}
+        - libhwloc
       host:
         - python
         - pip
