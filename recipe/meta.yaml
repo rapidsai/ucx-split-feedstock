@@ -91,10 +91,12 @@ outputs:
         - python
         - pip
         - cython
+        - libhwloc
         - ucx
       run:
         - python
         - numpy
+        - libhwloc
         - {{ pin_subpackage("ucx", exact=True) }}
       run_constrained:
         - ucx-proc * {{ ucx_proc_type }}
