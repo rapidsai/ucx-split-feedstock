@@ -14,11 +14,8 @@ source:
     sha256: a9598abd5c697e4a49a512b285c5747413d1f45155a12ecb1f5ee389c0459afa
     folder: ucx
     patches:
-      - patches/PR_4137.patch
-      - patches/PR_4366.patch
       - patches/PR_4383.patch
       - patches/PR_4384.patch
-      - patches/PR_4431.patch
   - url: https://github.com/rapidsai/ucx-py/archive/{{ ucx_py_version }}.tar.gz
     sha256: 379a77cb1192a783646f6bf79e37298ef4e2970c6258051599586c6e511f50f0
     folder: ucx-py
