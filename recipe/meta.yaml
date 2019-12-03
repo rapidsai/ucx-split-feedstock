@@ -17,6 +17,8 @@ source:
       - patches/PR_4383.patch
       - patches/PR_4384.patch
       - patches/PR_4515.patch
+      - patches/PR_4530.patch
+      - patches/PR_4533.patch
   - url: https://github.com/rapidsai/ucx-py/archive/{{ ucx_py_version }}.tar.gz
     sha256: 1f1b200e8c8e565dbdb46af7915b0b30c7aa277d1c0c460a2b558a01664b52a5
     folder: ucx-py
