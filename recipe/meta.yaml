@@ -1,6 +1,6 @@
 {% set ucx_version = "1.7.0-rc1" %}
 {% set ucx_proc_version = "1.0.0" %}
-{% set ucx_py_version = "0.3" %}
+{% set ucx_py_version = "0.4" %}
 {% set number = "2" %}
 
 {% set ucx_proc_type = "cpu" if cuda_compiler_version == "None" else "gpu" %}
@@ -14,13 +14,13 @@ source:
     sha256: a9598abd5c697e4a49a512b285c5747413d1f45155a12ecb1f5ee389c0459afa
     folder: ucx
     patches:
-      - patches/PR_4137.patch
-      - patches/PR_4366.patch
       - patches/PR_4383.patch
       - patches/PR_4384.patch
-      - patches/PR_4431.patch
+      - patches/PR_4515.patch
+      - patches/PR_4530.patch
+      - patches/PR_4533.patch
   - url: https://github.com/rapidsai/ucx-py/archive/{{ ucx_py_version }}.tar.gz
-    sha256: 379a77cb1192a783646f6bf79e37298ef4e2970c6258051599586c6e511f50f0
+    sha256: 1f1b200e8c8e565dbdb46af7915b0b30c7aa277d1c0c460a2b558a01664b52a5
     folder: ucx-py
 
 build:
@@ -93,10 +93,12 @@ outputs:
         - python
         - pip
         - cython
+        - libhwloc
         - ucx
       run:
         - python
         - numpy
+        - libhwloc
         - {{ pin_subpackage("ucx", exact=True) }}
       run_constrained:
         - ucx-proc * {{ ucx_proc_type }}

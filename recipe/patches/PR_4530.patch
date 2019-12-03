@@ -1,0 +1,28 @@
+From b52a94b1bf53b61239fd5a376dd638caa53dc764 Mon Sep 17 00:00:00 2001
+From: "Corey J. Nolet" <cjnolet@gmail.com>
+Date: Tue, 19 Nov 2019 14:37:52 -0500
+Subject: [PATCH] UCS/SYS: Formatting changes to NULL check
+
+Conflicts:
+	src/ucs/sys/sock.c
+---
+ src/ucs/sys/sock.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/src/ucs/sys/sock.c b/src/ucs/sys/sock.c
+index 76f76c64af..8b3fd466fc 100644
+--- a/src/ucs/sys/sock.c
++++ b/src/ucs/sys/sock.c
+@@ -528,6 +528,12 @@ ucs_status_t ucs_sockaddr_get_ifname(int fd, char *ifname_str, size_t max_strlen
+ 
+     for (ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
+         sa = (struct sockaddr*) ifa->ifa_addr;
++
++        if (sa == NULL) {
++            ucs_debug("NULL ifaddr encountered with ifa_name: %s", ifa->ifa_name);
++            continue;
++        }
++
+         if (((sa->sa_family == AF_INET) ||(sa->sa_family == AF_INET6)) && 
+             (!ucs_sockaddr_cmp(sa, my_addr, NULL))) {
+             ucs_debug("matching ip found iface on %s", ifa->ifa_name);

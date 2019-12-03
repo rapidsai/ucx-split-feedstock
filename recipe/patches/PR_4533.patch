@@ -1,0 +1,22 @@
+From 49d363f1f3efeeafef94b7207b94169e5b51aea5 Mon Sep 17 00:00:00 2001
+From: Yossi Itigin <yosefe@mellanox.com>
+Date: Tue, 5 Nov 2019 10:14:11 +0200
+Subject: [PATCH] Merge pull request #4385 from kostikbel/push1
+
+UCS/MEMORY: pthread_rwlock_t requires pthread.h.
+---
+ src/ucs/memory/memtype_cache.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/ucs/memory/memtype_cache.h b/src/ucs/memory/memtype_cache.h
+index 4c2e4e22d7..beca771693 100644
+--- a/src/ucs/memory/memtype_cache.h
++++ b/src/ucs/memory/memtype_cache.h
+@@ -13,6 +13,7 @@
+ #include <ucs/datastruct/list.h>
+ #include <ucs/stats/stats_fwd.h>
+ #include <ucs/sys/compiler_def.h>
++#include <pthread.h>
+ 
+ 
+ BEGIN_C_DECLS
