@@ -101,6 +101,7 @@ outputs:
         - {{ compiler("cxx") }}
         - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
         - {{ cdt("libnl") }}
+        - {{ cdt("libibcm") }}
         - {{ cdt("libibverbs") }}
         - {{ cdt("librdmacm") }}
       host:
