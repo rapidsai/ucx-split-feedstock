@@ -1,6 +1,6 @@
 {% set ucx_version = "1.6.1" %}
 {% set ucx_proc_version = "1.0.0" %}
-{% set number = "3" %}
+{% set number = "4" %}
 
 {% set ucx_proc_type = "cpu" if cuda_compiler_version == "None" else "gpu" %}
 
@@ -48,6 +48,7 @@ outputs:
         - {{ compiler("cxx") }}
         - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
         - {{ cdt("libnl") }}
+        - {{ cdt("libibcm-devel") }}
         - {{ cdt("libibverbs-devel") }}
         - {{ cdt("librdmacm-devel") }}
         - {{ cdt("numactl-devel") }}
