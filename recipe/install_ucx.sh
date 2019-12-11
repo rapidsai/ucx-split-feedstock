@@ -21,6 +21,7 @@ fi
     --enable-mt \
     --with-gnu-ld \
     --with-rdmacm \
+    --with-verbs \
     ${CUDA_CONFIG_ARG}
 
 make -j${CPU_COUNT}
