@@ -19,6 +19,7 @@ fi
     --with-sysroot \
     --disable-cma \
     --enable-mt \
+    --enable-numa \
     --with-gnu-ld \
     --with-cm \
     --with-rdmacm \
