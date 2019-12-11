@@ -21,6 +21,7 @@ fi
     --build="${BUILD}" \
     --host="${HOST}" \
     --prefix="${PREFIX}" \
+    --with-sysroot \
     --disable-cma \
     --enable-mt \
     --with-gnu-ld \
