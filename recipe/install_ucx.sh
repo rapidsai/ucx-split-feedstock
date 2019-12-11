@@ -20,7 +20,9 @@ fi
     --disable-cma \
     --enable-mt \
     --with-gnu-ld \
+    --with-cm \
     --with-rdmacm \
+    --with-verbs \
     ${CUDA_CONFIG_ARG}
 
 make -j${CPU_COUNT}
