@@ -86,7 +86,7 @@ outputs:
       host:
         - python
         - pip
-        - cython
+        - cython >=0.29.14,<3.0.0a0
         - ucx
       run:
         - python
