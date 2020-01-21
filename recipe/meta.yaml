@@ -85,6 +85,7 @@ outputs:
         - {{ cdt("libibcm") }}
         - {{ cdt("libibverbs") }}
         - {{ cdt("librdmacm") }}
+        - {{ cdt("numactl") }}
       host:
         - python
         - pip
