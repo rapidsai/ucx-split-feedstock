@@ -20,6 +20,7 @@ cd "${SRC_DIR}/ucx"
     --prefix="${PREFIX}" \
     --enable-mt \
     --with-gnu-ld \
+    --with-cm \
     --with-rdmacm \
     --with-verbs \
     ${CUDA_CONFIG_ARG}
