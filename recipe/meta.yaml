@@ -1,6 +1,6 @@
-{% set ucx_version = "1.6.1" %}
+{% set ucx_version = "1.7.0" %}
 {% set ucx_proc_version = "1.0.0" %}
-{% set number = "7" %}
+{% set number = "0" %}
 
 {% set ucx_proc_type = "cpu" if cuda_compiler_version == "None" else "gpu" %}
 
@@ -10,14 +10,7 @@ package:
 
 source:
   url: https://github.com/openucx/ucx/archive/v{{ ucx_version }}.tar.gz
-  sha256: 20b2970b3e714ff2d41937e53525d49c3012df7ef7eb7fcb75ae47efd7bd1396
-  patches:
-    #####################################################
-    # Fix a linking issue with `test_link_map`.         #
-    #                                                   #
-    # xref: https://github.com/openucx/ucx/issues/4218  #
-    #####################################################
-    - fixes_4218.diff
+  sha256: d7d8b2436990e106642fc90116bbf951cb2bf73479ebbe384c34410483b51187
 
 build:
   skip: true  # [not linux]
