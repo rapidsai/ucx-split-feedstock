@@ -19,6 +19,7 @@ cd "${SRC_DIR}/ucx"
     --host="${HOST}" \
     --prefix="${PREFIX}" \
     --enable-mt \
+    --enable-numa \
     --with-gnu-ld \
     --with-cm \
     --with-rdmacm \
