@@ -13,6 +13,8 @@ source:
   - url: https://github.com/openucx/ucx/archive/v{{ ucx_version }}.tar.gz
     sha256: d7d8b2436990e106642fc90116bbf951cb2bf73479ebbe384c34410483b51187
     folder: ucx
+    patches:
+      - ipc-cache-threshold.patch
   - url: https://github.com/rapidsai/ucx-py/archive/{{ ucx_py_version }}.tar.gz
     sha256: b19ff22ea4111afaaace05e9a6594e97776fac7fb04f7c2018a274a3dd57b53f
     folder: ucx-py
