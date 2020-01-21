@@ -14,6 +14,7 @@ cd "${SRC_DIR}/ucx"
     --host="${HOST}" \
     --prefix="${PREFIX}" \
     --with-sysroot \
+    --enable-cma \
     --enable-mt \
     --enable-numa \
     --with-gnu-ld \
