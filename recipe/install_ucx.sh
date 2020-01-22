@@ -3,7 +3,7 @@
 set -xeuo pipefail
 
 CUDA_CONFIG_ARG=""
-if [ ${cuda_compiler_version} != "None" ]; then
+if [ "${cuda_compiler_version}" != "None" ]; then
     CUDA_CONFIG_ARG="--with-cuda=${CUDA_HOME}"
 fi
 
