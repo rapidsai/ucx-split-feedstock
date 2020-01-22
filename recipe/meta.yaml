@@ -1,4 +1,4 @@
-{% set ucx_version = "1.7.0-rc1" %}
+{% set ucx_version = "1.7.0" %}
 {% set ucx_proc_version = "1.0.0" %}
 {% set ucx_py_version = "0.1" %}
 {% set number = "0" %}
@@ -11,8 +11,10 @@ package:
 
 source:
   - url: https://github.com/openucx/ucx/archive/v{{ ucx_version }}.tar.gz
-    sha256: a9598abd5c697e4a49a512b285c5747413d1f45155a12ecb1f5ee389c0459afa
+    sha256: d7d8b2436990e106642fc90116bbf951cb2bf73479ebbe384c34410483b51187
     folder: ucx
+    patches:
+      - ipc-cache-threshold.patch
   - url: https://github.com/rapidsai/ucx-py/archive/{{ ucx_py_version }}.tar.gz
     sha256: b19ff22ea4111afaaace05e9a6594e97776fac7fb04f7c2018a274a3dd57b53f
     folder: ucx-py
@@ -46,6 +48,7 @@ outputs:
         - {{ compiler("cxx") }}
         - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
         - {{ cdt("libnl") }}
+        - {{ cdt("libibcm-devel") }}
         - {{ cdt("libibverbs-devel") }}
         - {{ cdt("librdmacm-devel") }}
         - {{ cdt("numactl-devel") }}
@@ -81,12 +84,14 @@ outputs:
         - {{ compiler("cxx") }}
         - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
         - {{ cdt("libnl") }}
+        - {{ cdt("libibcm") }}
         - {{ cdt("libibverbs") }}
         - {{ cdt("librdmacm") }}
+        - {{ cdt("numactl") }}
       host:
         - python
         - pip
-        - cython
+        - cython >=0.29.14,<3.0.0a0
         - ucx
       run:
         - python
