@@ -109,7 +109,7 @@ outputs:
         - {{ cdt("numactl") }}
         - python
         - pip
-        - cython >=0.29.14,<0.30.0a
+        - cython >=0.29.14,<3.0.0a0
         - ucx
       run:
         - python
