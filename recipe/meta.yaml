@@ -49,6 +49,7 @@ outputs:
 
   - name: ucx
     version: "{{ ucx_version }}+g{{ ucx_commit }}"
+
     build:
       number: {{ number }}
       string: cuda{{ cuda_version }}_{{ number }}
@@ -95,6 +96,7 @@ outputs:
         - CUDA_HOME
       ignore_run_exports:
         - cudatoolkit                    # [cuda_compiler_version != "None"]
+
     requirements:
       build:
         - {{ compiler("c") }}
@@ -104,16 +106,15 @@ outputs:
         - {{ cdt("libibcm") }}
         - {{ cdt("libibverbs") }}
         - {{ cdt("librdmacm") }}
-      host:
-        - libhwloc
+        - {{ cdt("numactl") }}
         - python
         - pip
-        - cython
+        - cython >=0.29.14,<0.30.0a
         - ucx
       run:
         - python
         - numpy
-        - ucx {{ ucx_version }}+g{{ ucx_commit }}
+        - {{ pin_subpackage("ucx", exact=True) }}
       run_constrained:
         - ucx-proc * {{ ucx_proc_type }}
     script: install_ucx-py.sh

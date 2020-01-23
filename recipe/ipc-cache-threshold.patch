@@ -1,0 +1,512 @@
+From 02318817d2309e3c7e1da5e8655a5488bbdc44c9 Mon Sep 17 00:00:00 2001
+From: Akshay Venkatesh <akvenkatesh@nvidia.com>
+Date: Thu, 19 Dec 2019 13:20:30 -0800
+Subject: [PATCH 1/4] UCT/CUDA/CUDA_IPC: unmap only when there are no in-flight
+ requests
+
+---
+ src/uct/cuda/cuda_ipc/cuda_ipc_cache.c | 31 ++++++++++++++++++++++++++
+ src/uct/cuda/cuda_ipc/cuda_ipc_cache.h |  3 +++
+ src/uct/cuda/cuda_ipc/cuda_ipc_ep.c    | 20 +++++++++--------
+ src/uct/cuda/cuda_ipc/cuda_ipc_iface.c | 31 +++++++++-----------------
+ src/uct/cuda/cuda_ipc/cuda_ipc_iface.h | 22 +++++++++---------
+ 5 files changed, 67 insertions(+), 40 deletions(-)
+
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_cache.c b/src/uct/cuda/cuda_ipc/cuda_ipc_cache.c
+index 722e0b64e7..69bc68824f 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_cache.c
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_cache.c
+@@ -102,6 +102,35 @@ static void uct_cuda_ipc_cache_invalidate_regions(uct_cuda_ipc_cache_t *cache,
+               cache->name, from, to);
+ }
+ 
++ucs_status_t uct_cuda_ipc_unmap_memhandle(void *rem_cache, uintptr_t d_bptr, void *mapped_addr)
++{
++    uct_cuda_ipc_cache_t *cache = (uct_cuda_ipc_cache_t *) rem_cache;
++    ucs_status_t status         = UCS_OK;
++    ucs_pgt_region_t *pgt_region;
++    uct_cuda_ipc_cache_region_t *region;
++
++    pthread_rwlock_rdlock(&cache->lock);
++    pgt_region = UCS_PROFILE_CALL(ucs_pgtable_lookup, &cache->pgtable, d_bptr);
++    region = ucs_derived_of(pgt_region, uct_cuda_ipc_cache_region_t);
++
++    region->refcount--;
++    ucs_assert(region->refcount >= 0);
++
++    if (!region->refcount) {
++        status = ucs_pgtable_remove(&cache->pgtable, &region->super);
++        if (status != UCS_OK) {
++            ucs_error("failed to remove address:%p from cache (%s)",
++                      (void *)region->key.d_bptr, ucs_status_string(status));
++        }
++        ucs_assert(region->mapped_addr == mapped_addr);
++        status = UCT_CUDADRV_FUNC(cuIpcCloseMemHandle((CUdeviceptr) region->mapped_addr));
++        ucs_free(region);
++    }
++
++    pthread_rwlock_unlock(&cache->lock);
++    return status;
++}
++
+ ucs_status_t uct_cuda_ipc_cache_map_memhandle(void *arg, uct_cuda_ipc_key_t *key,
+                                               void **mapped_addr)
+ {
+@@ -124,6 +153,7 @@ ucs_status_t uct_cuda_ipc_cache_map_memhandle(void *arg, uct_cuda_ipc_key_t *key
+                       key->b_len, UCS_PGT_REGION_ARG(&region->super));
+ 
+             *mapped_addr = region->mapped_addr;
++            region->refcount++;
+             pthread_rwlock_unlock(&cache->lock);
+             return UCS_OK;
+         } else {
+@@ -199,6 +229,7 @@ ucs_status_t uct_cuda_ipc_cache_map_memhandle(void *arg, uct_cuda_ipc_key_t *key
+                                                UCS_PGT_ADDR_ALIGN);
+     region->key         = *key;
+     region->mapped_addr = *mapped_addr;
++    region->refcount    = 1;
+ 
+     status = UCS_PROFILE_CALL(ucs_pgtable_insert,
+                               &cache->pgtable, &region->super);
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_cache.h b/src/uct/cuda/cuda_ipc/cuda_ipc_cache.h
+index fa5f867771..d4c3cf9cc6 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_cache.h
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_cache.h
+@@ -26,6 +26,7 @@ struct uct_cuda_ipc_cache_region {
+     ucs_list_link_t         list;         /**< List element */
+     uct_cuda_ipc_key_t      key;          /**< Remote memory key */
+     void                    *mapped_addr; /**< Local mapped address */
++    unsigned                refcount;     /**< Track inflight ops before unmapping*/
+ };
+ 
+ 
+@@ -45,4 +46,6 @@ void uct_cuda_ipc_destroy_cache(uct_cuda_ipc_cache_t *cache);
+ 
+ ucs_status_t uct_cuda_ipc_cache_map_memhandle(void *arg, uct_cuda_ipc_key_t *key,
+                                               void **mapped_addr);
++ucs_status_t uct_cuda_ipc_unmap_memhandle(void *rem_cache, uintptr_t d_bptr,
++                                          void *mapped_addr);
+ #endif
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_ep.c b/src/uct/cuda/cuda_ipc/cuda_ipc_ep.c
+index 094b3a2e35..a896264cad 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_ep.c
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_ep.c
+@@ -27,15 +27,15 @@ static UCS_CLASS_INIT_FUNC(uct_cuda_ipc_ep_t, const uct_ep_params_t *params)
+     UCS_CLASS_CALL_SUPER_INIT(uct_base_ep_t, &iface->super);
+     self->remote_memh_cache = NULL;
+ 
+-    if (iface->config.enable_cache) {
+-        snprintf(target_name, sizeof(target_name), "dest:%d",
+-                 *(pid_t*)params->iface_addr);
+-        status = uct_cuda_ipc_create_cache(&self->remote_memh_cache, target_name);
+-        if (status != UCS_OK) {
+-            ucs_error("could not create create cuda ipc cache: %s",
+-                       ucs_status_string(status));
+-            return status;
+-        }
++    /* create a cache by default; disabling implies remove mapping immediately
++     * after use */
++    snprintf(target_name, sizeof(target_name), "dest:%d",
++            *(pid_t*)params->iface_addr);
++    status = uct_cuda_ipc_create_cache(&self->remote_memh_cache, target_name);
++    if (status != UCS_OK) {
++        ucs_error("could not create create cuda ipc cache: %s",
++                  ucs_status_string(status));
++        return status;
+     }
+ 
+     return UCS_OK;
+@@ -125,6 +125,8 @@ uct_cuda_ipc_post_cuda_async_copy(uct_ep_h tl_ep, uint64_t remote_addr,
+     ucs_queue_push(outstanding_queue, &cuda_ipc_event->queue);
+     cuda_ipc_event->comp        = comp;
+     cuda_ipc_event->mapped_addr = mapped_addr;
++    cuda_ipc_event->cache       = ep->remote_memh_cache;
++    cuda_ipc_event->d_bptr      = (uintptr_t)key->d_bptr;
+     ucs_trace("cuMemcpyDtoDAsync issued :%p dst:%p, src:%p  len:%ld",
+              cuda_ipc_event, (void *) dst, (void *) src, iov[0].length);
+     return UCS_INPROGRESS;
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c b/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c
+index cdc8c24c7e..4be0a9d323 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c
+@@ -203,7 +203,15 @@ uct_cuda_ipc_progress_event_q(uct_cuda_ipc_iface_t *iface,
+             uct_invoke_completion(cuda_ipc_event->comp, UCS_OK);
+         }
+ 
+-        status = iface->unmap_memhandle(cuda_ipc_event->mapped_addr);
++        /*
++         * Case when IPC cache is not used:
++         * there could be an in-flight transfer using the same mapping
++         * eg: osu bandwidth benchmark; two ops directed towards same peer that
++         * use same cuda region but different offsets and lengths
++         */
++        status = iface->unmap_memhandle(cuda_ipc_event->cache,
++                                        cuda_ipc_event->d_bptr,
++                                        cuda_ipc_event->mapped_addr);
+         if (status != UCS_OK) {
+             ucs_fatal("failed to unmap addr:%p", cuda_ipc_event->mapped_addr);
+         }
+@@ -343,24 +351,6 @@ static ucs_mpool_ops_t uct_cuda_ipc_event_desc_mpool_ops = {
+     .obj_cleanup   = uct_cuda_ipc_event_desc_cleanup,
+ };
+ 
+-ucs_status_t uct_cuda_ipc_map_memhandle(void *arg, uct_cuda_ipc_key_t *key,
+-                                        void **mapped_addr)
+-{
+-    if (key->d_mapped != 0) {
+-        /* potentially already mapped in uct_cuda_ipc_rkey_unpack */
+-        *mapped_addr = (void *) key->d_mapped;
+-        return UCS_OK;
+-    }
+-
+-    return  UCT_CUDADRV_FUNC(cuIpcOpenMemHandle((CUdeviceptr *)mapped_addr,
+-                             key->ph, CU_IPC_MEM_LAZY_ENABLE_PEER_ACCESS));
+-}
+-
+-ucs_status_t uct_cuda_ipc_unmap_memhandle(void *mapped_addr)
+-{
+-    return UCT_CUDADRV_FUNC(cuIpcCloseMemHandle((CUdeviceptr)mapped_addr));
+-}
+-
+ static UCS_CLASS_INIT_FUNC(uct_cuda_ipc_iface_t, uct_md_h md, uct_worker_h worker,
+                            const uct_iface_params_t *params,
+                            const uct_iface_config_t *tl_config)
+@@ -390,11 +380,10 @@ static UCS_CLASS_INIT_FUNC(uct_cuda_ipc_iface_t, uct_md_h md, uct_worker_h worke
+     self->config.max_poll     = config->max_poll;
+     self->config.enable_cache = config->enable_cache;
+ 
++    self->map_memhandle   = uct_cuda_ipc_cache_map_memhandle;
+     if (self->config.enable_cache) {
+-        self->map_memhandle   = uct_cuda_ipc_cache_map_memhandle;
+         self->unmap_memhandle = ucs_empty_function_return_success;
+     } else {
+-        self->map_memhandle   = uct_cuda_ipc_map_memhandle;
+         self->unmap_memhandle = uct_cuda_ipc_unmap_memhandle;
+     }
+ 
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_iface.h b/src/uct/cuda/cuda_ipc/cuda_ipc_iface.h
+index c0eb92d83d..36e2869ac9 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_iface.h
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_iface.h
+@@ -19,6 +19,16 @@
+ #define UCT_CUDA_IPC_MAX_PEERS  16
+ 
+ 
++typedef struct uct_cuda_ipc_event_desc {
++    CUevent           event;
++    void              *mapped_addr;
++    uct_completion_t  *comp;
++    ucs_queue_elem_t  queue;
++    void              *cache;
++    uintptr_t         d_bptr;
++} uct_cuda_ipc_event_desc_t;
++
++
+ typedef struct uct_cuda_ipc_iface {
+     uct_base_iface_t super;
+     ucs_mpool_t      event_desc;              /* cuda event desc */
+@@ -34,7 +44,8 @@ typedef struct uct_cuda_ipc_iface {
+     } config;
+     ucs_status_t     (*map_memhandle)(void *context, uct_cuda_ipc_key_t *key,
+                                       void **map_addr);
+-    ucs_status_t     (*unmap_memhandle)(void *map_addr);
++    ucs_status_t     (*unmap_memhandle)(void *rem_cache, uintptr_t d_bptr,
++                                        void *mapped_addr);
+ } uct_cuda_ipc_iface_t;
+ 
+ 
+@@ -45,14 +56,5 @@ typedef struct uct_cuda_ipc_iface_config {
+ } uct_cuda_ipc_iface_config_t;
+ 
+ 
+-typedef struct uct_cuda_ipc_event_desc {
+-    CUevent           event;
+-    void              *mapped_addr;
+-    uct_completion_t  *comp;
+-    ucs_queue_elem_t  queue;
+-    uct_cuda_ipc_ep_t *ep;
+-} uct_cuda_ipc_event_desc_t;
+-
+-
+ ucs_status_t uct_cuda_ipc_iface_init_streams(uct_cuda_ipc_iface_t *iface);
+ #endif
+
+From 837c3541a2d16072a18a7d12881d7f187efdea2b Mon Sep 17 00:00:00 2001
+From: Akshay Venkatesh <akvenkatesh@nvidia.com>
+Date: Fri, 20 Dec 2019 11:49:10 -0800
+Subject: [PATCH 2/4] UCT/CUDA/CUDA_IPC: add threshold after which mappings are
+ not cached
+
+---
+ src/uct/cuda/cuda_ipc/cuda_ipc_cache.c | 35 +++++++++++++++++++++++++-
+ src/uct/cuda/cuda_ipc/cuda_ipc_cache.h |  8 +++++-
+ src/uct/cuda/cuda_ipc/cuda_ipc_ep.c    |  1 +
+ src/uct/cuda/cuda_ipc/cuda_ipc_iface.c | 13 ++++++++--
+ src/uct/cuda/cuda_ipc/cuda_ipc_iface.h |  6 ++++-
+ 5 files changed, 58 insertions(+), 5 deletions(-)
+
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_cache.c b/src/uct/cuda/cuda_ipc/cuda_ipc_cache.c
+index 69bc68824f..6deef0ad9b 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_cache.c
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_cache.c
+@@ -102,7 +102,40 @@ static void uct_cuda_ipc_cache_invalidate_regions(uct_cuda_ipc_cache_t *cache,
+               cache->name, from, to);
+ }
+ 
+-ucs_status_t uct_cuda_ipc_unmap_memhandle(void *rem_cache, uintptr_t d_bptr, void *mapped_addr)
++ucs_status_t uct_cuda_ipc_cache_unmap_memhandle(void *rem_cache, uintptr_t d_bptr,
++                                                void *mapped_addr, size_t b_len,
++                                                size_t threshold)
++{
++    uct_cuda_ipc_cache_t *cache = (uct_cuda_ipc_cache_t *) rem_cache;
++    ucs_status_t status         = UCS_OK;
++    ucs_pgt_region_t *pgt_region;
++    uct_cuda_ipc_cache_region_t *region;
++
++    pthread_rwlock_rdlock(&cache->lock);
++    pgt_region = UCS_PROFILE_CALL(ucs_pgtable_lookup, &cache->pgtable, d_bptr);
++    region = ucs_derived_of(pgt_region, uct_cuda_ipc_cache_region_t);
++
++    region->refcount--;
++    ucs_assert(region->refcount >= 0);
++
++    if (!region->refcount && (b_len > threshold)) {
++        status = ucs_pgtable_remove(&cache->pgtable, &region->super);
++        if (status != UCS_OK) {
++            ucs_error("failed to remove address:%p from cache (%s)",
++                      (void *)region->key.d_bptr, ucs_status_string(status));
++        }
++        ucs_assert(region->mapped_addr == mapped_addr);
++        status = UCT_CUDADRV_FUNC(cuIpcCloseMemHandle((CUdeviceptr) region->mapped_addr));
++        ucs_free(region);
++    }
++
++    pthread_rwlock_unlock(&cache->lock);
++    return status;
++}
++
++ucs_status_t uct_cuda_ipc_unmap_memhandle(void *rem_cache, uintptr_t d_bptr,
++                                          void *mapped_addr, size_t b_len,
++                                          size_t threshold)
+ {
+     uct_cuda_ipc_cache_t *cache = (uct_cuda_ipc_cache_t *) rem_cache;
+     ucs_status_t status         = UCS_OK;
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_cache.h b/src/uct/cuda/cuda_ipc/cuda_ipc_cache.h
+index d4c3cf9cc6..4835bca704 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_cache.h
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_cache.h
+@@ -47,5 +47,11 @@ void uct_cuda_ipc_destroy_cache(uct_cuda_ipc_cache_t *cache);
+ ucs_status_t uct_cuda_ipc_cache_map_memhandle(void *arg, uct_cuda_ipc_key_t *key,
+                                               void **mapped_addr);
+ ucs_status_t uct_cuda_ipc_unmap_memhandle(void *rem_cache, uintptr_t d_bptr,
+-                                          void *mapped_addr);
++                                          void *mapped_addr, size_t b_len,
++                                          size_t threshold);
++ucs_status_t uct_cuda_ipc_cache_unmap_memhandle(void *rem_cache,
++                                                uintptr_t d_bptr,
++                                                void *mapped_addr,
++                                                size_t b_len,
++                                                size_t threshold);
+ #endif
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_ep.c b/src/uct/cuda/cuda_ipc/cuda_ipc_ep.c
+index a896264cad..b20a73dde8 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_ep.c
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_ep.c
+@@ -127,6 +127,7 @@ uct_cuda_ipc_post_cuda_async_copy(uct_ep_h tl_ep, uint64_t remote_addr,
+     cuda_ipc_event->mapped_addr = mapped_addr;
+     cuda_ipc_event->cache       = ep->remote_memh_cache;
+     cuda_ipc_event->d_bptr      = (uintptr_t)key->d_bptr;
++    cuda_ipc_event->b_len       = key->b_len;
+     ucs_trace("cuMemcpyDtoDAsync issued :%p dst:%p, src:%p  len:%ld",
+              cuda_ipc_event, (void *) dst, (void *) src, iov[0].length);
+     return UCS_INPROGRESS;
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c b/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c
+index 4be0a9d323..9b093e2964 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c
+@@ -27,6 +27,12 @@ static ucs_config_field_t uct_cuda_ipc_iface_config_table[] = {
+      ucs_offsetof(uct_cuda_ipc_iface_config_t, enable_cache),
+      UCS_CONFIG_TYPE_BOOL},
+ 
++    {"CACHE_LIMIT", "32mb",
++     "meppijng size after which caching is disabled",
++     ucs_offsetof(uct_cuda_ipc_iface_config_t, cache_limit),
++     UCS_CONFIG_TYPE_MEMUNITS},
++
++
+     {NULL}
+ };
+ 
+@@ -211,7 +217,9 @@ uct_cuda_ipc_progress_event_q(uct_cuda_ipc_iface_t *iface,
+          */
+         status = iface->unmap_memhandle(cuda_ipc_event->cache,
+                                         cuda_ipc_event->d_bptr,
+-                                        cuda_ipc_event->mapped_addr);
++                                        cuda_ipc_event->mapped_addr,
++                                        cuda_ipc_event->b_len,
++                                        iface->config.cache_limit);
+         if (status != UCS_OK) {
+             ucs_fatal("failed to unmap addr:%p", cuda_ipc_event->mapped_addr);
+         }
+@@ -379,10 +387,11 @@ static UCS_CLASS_INIT_FUNC(uct_cuda_ipc_iface_t, uct_md_h md, uct_worker_h worke
+     self->device_count        = dev_count;
+     self->config.max_poll     = config->max_poll;
+     self->config.enable_cache = config->enable_cache;
++    self->config.cache_limit  = config->cache_limit;
+ 
+     self->map_memhandle   = uct_cuda_ipc_cache_map_memhandle;
+     if (self->config.enable_cache) {
+-        self->unmap_memhandle = ucs_empty_function_return_success;
++        self->unmap_memhandle = uct_cuda_ipc_cache_unmap_memhandle;
+     } else {
+         self->unmap_memhandle = uct_cuda_ipc_unmap_memhandle;
+     }
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_iface.h b/src/uct/cuda/cuda_ipc/cuda_ipc_iface.h
+index 36e2869ac9..cab386c7f7 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_iface.h
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_iface.h
+@@ -26,6 +26,7 @@ typedef struct uct_cuda_ipc_event_desc {
+     ucs_queue_elem_t  queue;
+     void              *cache;
+     uintptr_t         d_bptr;
++    size_t            b_len;
+ } uct_cuda_ipc_event_desc_t;
+ 
+ 
+@@ -41,11 +42,13 @@ typedef struct uct_cuda_ipc_iface {
+     struct {
+         unsigned     max_poll;                /* query attempts w.o success */
+         int          enable_cache;            /* enable/disable ipc handle cache */
++        size_t       cache_limit;             /* mapping size limit for ipc cache*/
+     } config;
+     ucs_status_t     (*map_memhandle)(void *context, uct_cuda_ipc_key_t *key,
+                                       void **map_addr);
+     ucs_status_t     (*unmap_memhandle)(void *rem_cache, uintptr_t d_bptr,
+-                                        void *mapped_addr);
++                                        void *mapped_addr, size_t b_len,
++                                        size_t threshold);
+ } uct_cuda_ipc_iface_t;
+ 
+ 
+@@ -53,6 +56,7 @@ typedef struct uct_cuda_ipc_iface_config {
+     uct_iface_config_t      super;
+     unsigned                max_poll;
+     int                     enable_cache;
++    size_t                  cache_limit;
+ } uct_cuda_ipc_iface_config_t;
+ 
+ 
+
+From 6e037560fb37d884cffdb14ba6be0a063226795d Mon Sep 17 00:00:00 2001
+From: Akshay Venkatesh <akvenkatesh@nvidia.com>
+Date: Fri, 20 Dec 2019 12:28:15 -0800
+Subject: [PATCH 3/4] UCT/CUDA/CUDA_IPC: cuda ipc threshold code trim
+
+---
+ src/uct/cuda/cuda_ipc/cuda_ipc_cache.c | 33 +-------------------------
+ src/uct/cuda/cuda_ipc/cuda_ipc_cache.h |  3 ---
+ src/uct/cuda/cuda_ipc/cuda_ipc_iface.c |  6 ++---
+ 3 files changed, 4 insertions(+), 38 deletions(-)
+
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_cache.c b/src/uct/cuda/cuda_ipc/cuda_ipc_cache.c
+index 6deef0ad9b..1915be5356 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_cache.c
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_cache.c
+@@ -118,38 +118,7 @@ ucs_status_t uct_cuda_ipc_cache_unmap_memhandle(void *rem_cache, uintptr_t d_bpt
+     region->refcount--;
+     ucs_assert(region->refcount >= 0);
+ 
+-    if (!region->refcount && (b_len > threshold)) {
+-        status = ucs_pgtable_remove(&cache->pgtable, &region->super);
+-        if (status != UCS_OK) {
+-            ucs_error("failed to remove address:%p from cache (%s)",
+-                      (void *)region->key.d_bptr, ucs_status_string(status));
+-        }
+-        ucs_assert(region->mapped_addr == mapped_addr);
+-        status = UCT_CUDADRV_FUNC(cuIpcCloseMemHandle((CUdeviceptr) region->mapped_addr));
+-        ucs_free(region);
+-    }
+-
+-    pthread_rwlock_unlock(&cache->lock);
+-    return status;
+-}
+-
+-ucs_status_t uct_cuda_ipc_unmap_memhandle(void *rem_cache, uintptr_t d_bptr,
+-                                          void *mapped_addr, size_t b_len,
+-                                          size_t threshold)
+-{
+-    uct_cuda_ipc_cache_t *cache = (uct_cuda_ipc_cache_t *) rem_cache;
+-    ucs_status_t status         = UCS_OK;
+-    ucs_pgt_region_t *pgt_region;
+-    uct_cuda_ipc_cache_region_t *region;
+-
+-    pthread_rwlock_rdlock(&cache->lock);
+-    pgt_region = UCS_PROFILE_CALL(ucs_pgtable_lookup, &cache->pgtable, d_bptr);
+-    region = ucs_derived_of(pgt_region, uct_cuda_ipc_cache_region_t);
+-
+-    region->refcount--;
+-    ucs_assert(region->refcount >= 0);
+-
+-    if (!region->refcount) {
++    if (!region->refcount && ((int) b_len > (int) threshold)) {
+         status = ucs_pgtable_remove(&cache->pgtable, &region->super);
+         if (status != UCS_OK) {
+             ucs_error("failed to remove address:%p from cache (%s)",
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_cache.h b/src/uct/cuda/cuda_ipc/cuda_ipc_cache.h
+index 4835bca704..2d643794a6 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_cache.h
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_cache.h
+@@ -46,9 +46,6 @@ void uct_cuda_ipc_destroy_cache(uct_cuda_ipc_cache_t *cache);
+ 
+ ucs_status_t uct_cuda_ipc_cache_map_memhandle(void *arg, uct_cuda_ipc_key_t *key,
+                                               void **mapped_addr);
+-ucs_status_t uct_cuda_ipc_unmap_memhandle(void *rem_cache, uintptr_t d_bptr,
+-                                          void *mapped_addr, size_t b_len,
+-                                          size_t threshold);
+ ucs_status_t uct_cuda_ipc_cache_unmap_memhandle(void *rem_cache,
+                                                 uintptr_t d_bptr,
+                                                 void *mapped_addr,
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c b/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c
+index 9b093e2964..aaf0922ce4 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c
+@@ -387,13 +387,13 @@ static UCS_CLASS_INIT_FUNC(uct_cuda_ipc_iface_t, uct_md_h md, uct_worker_h worke
+     self->device_count        = dev_count;
+     self->config.max_poll     = config->max_poll;
+     self->config.enable_cache = config->enable_cache;
+-    self->config.cache_limit  = config->cache_limit;
+ 
+     self->map_memhandle   = uct_cuda_ipc_cache_map_memhandle;
++    self->unmap_memhandle = uct_cuda_ipc_cache_unmap_memhandle;
+     if (self->config.enable_cache) {
+-        self->unmap_memhandle = uct_cuda_ipc_cache_unmap_memhandle;
++        self->config.cache_limit  = config->cache_limit;
+     } else {
+-        self->unmap_memhandle = uct_cuda_ipc_unmap_memhandle;
++        self->config.cache_limit  = -1;
+     }
+ 
+     status = ucs_mpool_init(&self->event_desc,
+
+From 91464051e5b31cde32ae14530ec7fbf609f2e2ca Mon Sep 17 00:00:00 2001
+From: Peter Andreas Entschev <peter@entschev.com>
+Date: Mon, 20 Jan 2020 08:45:13 -0800
+Subject: [PATCH 4/4] Fix overflow in uct_cuda_ipc_cache_unmap_memhandle
+
+---
+ src/uct/cuda/cuda_ipc/cuda_ipc_cache.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_cache.c b/src/uct/cuda/cuda_ipc/cuda_ipc_cache.c
+index 1915be5356..9b9259b2c2 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_cache.c
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_cache.c
+@@ -118,7 +118,7 @@ ucs_status_t uct_cuda_ipc_cache_unmap_memhandle(void *rem_cache, uintptr_t d_bpt
+     region->refcount--;
+     ucs_assert(region->refcount >= 0);
+ 
+-    if (!region->refcount && ((int) b_len > (int) threshold)) {
++    if (!region->refcount && ((size_t) b_len > (size_t) threshold)) {
+         status = ucs_pgtable_remove(&cache->pgtable, &region->super);
+         if (status != UCS_OK) {
+             ucs_error("failed to remove address:%p from cache (%s)",
