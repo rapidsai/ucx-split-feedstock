@@ -1,12 +1,17 @@
-FROM_IMAGE: condaforge/linux-anvil-cuda
+FROM_IMAGE:
+  - condaforge/linux-anvil-cuda
 
-UCX_VERSION: 1.7.0rc2
+UCX_VERSION:
+  - 1.7.0rc2
 
-UCX_COMMIT: v1.7.0-rc2
+UCX_COMMIT:
+  - v1.7.0-rc2
 
-UCX_PROC_VERSION: 1.0.0
+UCX_PROC_VERSION:
+  - 1.0.0
 
-UCX_PY_COMMIT: master
+UCX_PY_COMMIT:
+  - master
 
 CUDA_VERSION:
   - 10.2
