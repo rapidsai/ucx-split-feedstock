@@ -1,27 +1,42 @@
-{% set ucx_version = "1.7.0" %}
-{% set ucx_proc_version = "1.0.0" %}
-{% set ucx_py_version = "0.1" %}
-{% set number = "0" %}
+#### START - Config version naming (right side is default value)
+{% set ucx_version = environ.get("UCX_VERSION", "1.7.0dev") %}
+{% set ucx_proc_version = environ.get("UCX_PROC_VERSION", "1.0.0") %}
+{% set ucx_py_version = environ.get("UCX_PY_VERSION", "0.12a").lstrip('v') %}
+{% set number = environ.get("BUILD_NUMBER", 0) %}
+{% set cuda_version = '.'.join(environ.get('CUDA_VERSION', '9.2').split('.')[:2]) %}
+{% set py_version = environ.get('CONDA_PY', '36') %}
+#### END - Config version naming
+
+#### START - Config source commits (right side is default value)
+{% set ucx_commit = environ.get("UCX_COMMIT", "430ae7e") %}
+{% set ucx_py_commit = environ.get("UCX_PY_COMMIT", "486852e") %}
+#### END - Config source commits
 
 {% set ucx_proc_type = "cpu" if cuda_compiler_version == "None" else "gpu" %}
-
 
 package:
   name: ucx-split
 
 source:
-  - url: https://github.com/openucx/ucx/archive/v{{ ucx_version }}.tar.gz
-    sha256: d7d8b2436990e106642fc90116bbf951cb2bf73479ebbe384c34410483b51187
+  - git_url: https://github.com/openucx/ucx
+    git_rev: {{ ucx_commit }}
     folder: ucx
     patches:
       - ipc-cache-threshold.patch
-  - url: https://github.com/rapidsai/ucx-py/archive/{{ ucx_py_version }}.tar.gz
-    sha256: b19ff22ea4111afaaace05e9a6594e97776fac7fb04f7c2018a274a3dd57b53f
+  - git_url: https://github.com/rapidsai/ucx-py
+    git_rev: {{ ucx_py_commit }}
     folder: ucx-py
 
 build:
   skip: true  # [not linux]
   number: 0
+  script_env:
+    - UCX_VERSION
+    - UCX_PROC_VERSION
+    - UCX_COMMIT
+    - UCX_PY_VERSION
+    - UCX_PY_COMMIT
+    - BUILD_NUMBER
 
 outputs:
   - name: ucx-proc
@@ -39,9 +54,13 @@ outputs:
       summary: A meta-package to select CPU or GPU UCX build.
 
   - name: ucx
-    version: {{ ucx_version|replace("-", "") }}
+    version: "{{ ucx_version }}+g{{ ucx_commit }}"
+
     build:
       number: {{ number }}
+      string: cuda{{ cuda_version }}_{{ number }}
+      script_env:
+        - CUDA_HOME
     requirements:
       build:
         - {{ compiler("c") }}
@@ -77,7 +96,13 @@ outputs:
     version: "{{ ucx_py_version }}"
     build:
       number: {{ number }}
+      string: py{{ py_version }}_{{ number }}
       skip: true  # [py<36]
+      script_env:
+        - CUDA_HOME
+      ignore_run_exports:
+        - cudatoolkit                    # [cuda_compiler_version != "None"]
+
     requirements:
       build:
         - {{ compiler("c") }}
