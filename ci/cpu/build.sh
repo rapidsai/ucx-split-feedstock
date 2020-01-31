@@ -17,14 +17,14 @@ source ~/.bashrc
 cd ~
 
 # Copy workspace to home and set permissions
-echo "~" | xargs sudo cp -R $WORKSPACE/*
-echo "~" | xargs sudo chown -R conda:conda
+cp -R $WORKSPACE/* ~
+chown -R conda:conda ~
 
 # Print current env vars
 env
 
 # Install yum reqs
-xargs sudo yum -y install < recipe/yum_requirements.txt
+xargs yum -y install < recipe/yum_requirements.txt
 
 # Fetch pkgs for build
 gpuci_retry conda install -y -k -c nvidia -c conda-forge -c defaults conda-verify cudatoolkit=$CUDA_VER
