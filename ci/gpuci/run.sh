@@ -20,4 +20,4 @@ gpuci_retry docker pull ${FROM_IMAGE}:${CUDA_VERSION}
 
 # Run conda build script
 gpuci_retry docker run --rm --user root --env-file env.list -v $WORKSPACE:$WORKSPACE \
-            --entrypoint "/bin/bash $WORKSPACE/ci/cpu/build.sh" ${FROM_IMAGE}:${CUDA_VERSION}
+            --entrypoint "/bin/bash" ${FROM_IMAGE}:${CUDA_VERSION} bash $WORKSPACE/ci/cpu/build.sh
