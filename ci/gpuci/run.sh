@@ -12,8 +12,11 @@ export HOME=$WORKSPACE
 curl -s https://raw.githubusercontent.com/rapidsai/gpuci-mgmt/master/gpuci-tools.sh | bash
 source ~/.bashrc
 
+# Export env vars
+env > env.list
+
 # Fetch docker container
 gpuci_retry docker pull ${FROM_IMAGE}:${CUDA_VERSION}
 
 # Run conda build script
-gpuci_retry docker run -v $WORKSPACE:$WORKSPACE -w $WORKSPACE ${FROM_IMAGE}:${CUDA_VERSION} bash $WORKSPACE/ci/cpu/build.sh
+gpuci_retry docker run --env-file env.list -v $WORKSPACE:$WORKSPACE -w $WORKSPACE ${FROM_IMAGE}:${CUDA_VERSION} bash $WORKSPACE/ci/cpu/build.sh
