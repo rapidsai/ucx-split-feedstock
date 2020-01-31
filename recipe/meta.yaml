@@ -74,6 +74,7 @@ outputs:
         - automake
         - autoconf
         - libtool
+        - libgomp      # [linux and not aarch64]
         - make
         - pkg-config
       host:
