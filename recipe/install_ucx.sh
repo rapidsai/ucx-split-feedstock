@@ -23,5 +23,5 @@ cd "${SRC_DIR}/ucx"
     --with-verbs \
     ${CUDA_CONFIG_ARG}
 
-make V=1 CFLAGS="${CFLAGS} -fopenmp" -j${CPU_COUNT}
+make V=1 -j${CPU_COUNT}
 make install
