@@ -1,6 +1,9 @@
 FROM_IMAGE:
   - condaforge/linux-anvil-cuda
 
+CONDA_USERNAME:
+  - rapidsai-nightly
+
 UCX_VERSION:
   - 1.7.0dev
 
