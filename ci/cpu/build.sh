@@ -1,15 +1,15 @@
 #!/bin/bash
 # Copyright (c) 2020, NVIDIA CORPORATION.
-#############################################
-# ucx-py conda build and test script for CI #
-#############################################
+####################################
+# ucx-py conda build script for CI #
+####################################
 set -ex
 
 # Set paths
 export PATH=/opt/conda/bin:$PATH
 export HOME=$WORKSPACE
 
-# Activate base conda env
+# Activate base conda env (this is run in docker condaforge/linux-anvil-cuda:CUDA_VER)
 source activate base
 
 # Install gpuCI tools
