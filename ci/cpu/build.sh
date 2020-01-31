@@ -27,7 +27,7 @@ cp -rT $WORKSPACE ~
 xargs yum -y install < recipe/yum_requirements.txt
 
 # Fetch pkgs for build
-gpuci_retry conda install -y -k -c nvidia -c conda-forge -c defaults conda-verify cudatoolkit=$CUDA_VER
+conda install -y -k -c nvidia -c conda-forge -c defaults conda-verify cudatoolkit=$CUDA_VER
 
 # Print diagnostic information
 conda info
@@ -47,7 +47,7 @@ env
 export UCX_PY_VERSION="${UCX_PY_VERSION}${VERSION_SUFFIX}+g${UCX_PY_COMMIT:0:7}"
 
 # Start conda build
-gpuci_retry conda build -c conda-forge -c defaults .
+conda build -c conda-forge -c defaults .
 
 # Uploda files to anaconda
 #gpuci_retry anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} --label main --force /opt/conda/conda-bld/linux-64/ucx*.bz2
