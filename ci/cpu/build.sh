@@ -15,6 +15,7 @@ source activate base
 # Install gpuCI tools
 curl -s https://raw.githubusercontent.com/rapidsai/gpuci-mgmt/master/gpuci-tools.sh | bash
 source ~/.bashrc
+cd $WORKSPACE
 
 # Print current env vars
 env
