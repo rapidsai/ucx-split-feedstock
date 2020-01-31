@@ -46,4 +46,4 @@ export UCX_PY_VERSION="${UCX_PY_VERSION}${VERSION_SUFFIX}+g${UCX_PY_COMMIT:0:7}"
 gpuci_retry conda build -c conda-forge -c defaults .
 
 # Uploda files to anaconda
-gpuci_retry anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} --label main --force /opt/conda/conda-bld/linux-64/ucx*.bz2
+#gpuci_retry anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} --label main --force /opt/conda/conda-bld/linux-64/ucx*.bz2
