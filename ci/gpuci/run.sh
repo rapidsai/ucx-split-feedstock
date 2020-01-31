@@ -16,4 +16,4 @@ source ~/.bashrc
 gpuci_retry docker pull ${FROM_IMAGE}:${CUDA_VERSION}
 
 # Run conda build script
-gpuci_retry docker run -v $WORKSPACE:$WORKSPACE -w $WORKSPACE ${FROM_IMAGE}:${CUDA_VERSION} bash ./ci/cpu/build.sh
+gpuci_retry docker run -v $WORKSPACE:$WORKSPACE -w $WORKSPACE ${FROM_IMAGE}:${CUDA_VERSION} bash $WORKSPACE/ci/cpu/build.sh
