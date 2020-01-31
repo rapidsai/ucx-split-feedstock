@@ -1,8 +1,8 @@
 #!/bin/bash
 # Copyright (c) 2020, NVIDIA CORPORATION.
-####################################
-# ucx-py conda build script for CI #
-####################################
+#######################################
+# ucx-py conda build script for gpuCI #
+#######################################
 set -ex
 
 # Set paths
