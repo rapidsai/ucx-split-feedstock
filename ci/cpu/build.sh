@@ -18,7 +18,6 @@ cd ~
 
 # Copy workspace to home and set permissions
 cp -R $WORKSPACE/* ~
-chown -R conda:conda ~
 
 # Print current env vars
 env
