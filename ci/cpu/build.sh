@@ -21,7 +21,7 @@ cd $WORKSPACE
 env
 
 # Install yum reqs
-xargs yum -y install < recipe/yum_requirements.txt
+xargs sudo yum -y install < recipe/yum_requirements.txt
 
 # Fetch pkgs for build
 gpuci_retry conda install -y -k -c nvidia -c conda-forge -c defaults conda-verify cudatoolkit=$CUDA_VER
