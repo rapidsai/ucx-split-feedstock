@@ -7,7 +7,6 @@ set -ex
 
 # Set paths
 export PATH=/opt/conda/bin:$PATH
-export HOME=$WORKSPACE
 
 # Activate base conda env (this is run in docker condaforge/linux-anvil-cuda:CUDA_VER)
 source activate base
@@ -15,7 +14,11 @@ source activate base
 # Install gpuCI tools
 curl -s https://raw.githubusercontent.com/rapidsai/gpuci-mgmt/master/gpuci-tools.sh | bash
 source ~/.bashrc
-cd $WORKSPACE
+cd ~
+
+# Copy workspace to home and set permissions
+sudo cp -R $WORKSPACE/* ~
+sudo chown -R conda:conda ~
 
 # Print current env vars
 env
