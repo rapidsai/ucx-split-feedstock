@@ -7,8 +7,6 @@ if [ ${cuda_compiler_version} != "None" ]; then
     CUDA_CONFIG_ARG="--with-cuda=${CUDA_HOME}"
 fi
 
-export CFLAGS="${CFLAGS} -fopenmp"
-
 cd "${SRC_DIR}/ucx"
 ./autogen.sh
 ./configure \
@@ -25,5 +23,7 @@ cd "${SRC_DIR}/ucx"
     --with-verbs \
     ${CUDA_CONFIG_ARG}
 
-make -j${CPU_COUNT}
+export CFLAGS="${CFLAGS} -fopenmp"
+
+make V=1 -j${CPU_COUNT}
 make install
