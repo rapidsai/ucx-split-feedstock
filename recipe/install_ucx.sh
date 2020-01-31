@@ -21,8 +21,8 @@ cd "${SRC_DIR}/ucx"
     --with-cm \
     --with-rdmacm \
     --with-verbs \
-    ${CUDA_CONFIG_ARG} \
- || { cat config.log; exit 1; }
+    ${CUDA_CONFIG_ARG}
+cat config.log
 
 make V=1 -j${CPU_COUNT}
 make install
