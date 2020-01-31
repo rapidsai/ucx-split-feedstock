@@ -17,8 +17,8 @@ source ~/.bashrc
 cd ~
 
 # Copy workspace to home and set permissions
-sudo cp -R $WORKSPACE/* ~
-sudo chown -R conda:conda ~
+echo "~" | xargs sudo cp -R $WORKSPACE/*
+echo "~" | xargs sudo chown -R conda:conda
 
 # Print current env vars
 env
