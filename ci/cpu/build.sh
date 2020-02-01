@@ -20,16 +20,20 @@ curl -s https://raw.githubusercontent.com/rapidsai/gpuci-mgmt/master/gpuci-tools
 source ~/.bashrc
 cd ~
 
-# Copy workspace to home and set permissions
+# Copy workspace to home
+gpuci_logger "Copy workspace from volume to home for work..."
 cp -rT $WORKSPACE ~
 
 # Install yum reqs
+gpuci_logger "Install system libraries needed for build..."
 xargs yum -y install < recipe/yum_requirements.txt
 
 # Fetch pkgs for build
+gpuci_logger "Install conda pkgs needed for build..."
 conda install -y -k -c nvidia -c conda-forge -c defaults conda-verify cudatoolkit=$CUDA_VER
 
 # Print diagnostic information
+gpuci_logger "Print conda info..."
 conda info
 conda config --show-sources
 conda list --show-channel-urls
@@ -41,14 +45,21 @@ cat .ci_support/linux_cuda_compiler_version${CUDA_VER}.yaml >> recipe/conda_buil
 echo "ssl_verify: false" >> /opt/conda/.condarc
 
 # Print current env vars
+gpuci_logger "Print current environment..."
 env
 
 # Start conda build
+gpuci_logger "Starting conda build..."
 conda build --override-channels -c conda-forge -c nvidia .
 
 # Get conda build output
+gpuci_logger "Getting conda build output..."
 conda build --override-channels -c conda-forge -c nvidia . --output > conda.output
 
 # Uploda files to anaconda
-cat conda.output | xargs echo
-#gpuci_retry anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} --label main --force /opt/conda/conda-bld/linux-64/ucx*.bz2
+if [ ! -z "${MY_UPLOAD_KEY}" ] ; then
+  gpuci_logger "Upload token present, uploading..."
+  cat conda.output | xargs gpuci_retry anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} --label main --force
+else
+  gpuci_logger "Upload token 'MY_UPLOAD_KEY' not present, skipping upload..."
+fi
