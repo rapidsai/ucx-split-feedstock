@@ -43,9 +43,6 @@ echo "ssl_verify: false" >> /opt/conda/.condarc
 # Print current env vars
 env
 
-# Create ucx-py build string
-export UCX_PY_VERSION="${UCX_PY_VERSION}${VERSION_SUFFIX}+g${UCX_PY_COMMIT:0:7}"
-
 # Start conda build
 conda build --override-channels -c conda-forge -c nvidia .
 
