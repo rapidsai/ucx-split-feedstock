@@ -46,5 +46,9 @@ env
 # Start conda build
 conda build --override-channels -c conda-forge -c nvidia .
 
+# Get conda build output
+conda build --override-channels -c conda-forge -c nvidia . --output > conda.output
+
 # Uploda files to anaconda
+cat conda.output | xargs echo
 #gpuci_retry anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} --label main --force /opt/conda/conda-bld/linux-64/ucx*.bz2
