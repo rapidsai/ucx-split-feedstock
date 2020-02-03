@@ -1,8 +1,9 @@
 #### START - Config version naming (right side is default value)
-{% set ucx_version = environ.get("UCX_VERSION", "1.7.0dev") %}
+{% set ucx_version = environ.get("UCX_VERSION", "1.7.0dev").lstrip('v') %}
+{% set ucx_number = environ.get("UCX_BUILD_NUMBER", 0) %}
 {% set ucx_proc_version = environ.get("UCX_PROC_VERSION", "1.0.0") %}
-{% set ucx_py_version = environ.get("UCX_PY_VERSION", "0.12a").lstrip('v') %}
-{% set number = environ.get("BUILD_NUMBER", 0) %}
+{% set ucx_py_version = environ.get("UCX_PY_VERSION", "0.12a").lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
+{% set ucx_py_number = environ.get("UCX_PY_BUILD_NUMBER", 0) %}
 {% set cuda_version = '.'.join(environ.get('CUDA_VERSION', '9.2').split('.')[:2]) %}
 {% set py_version = environ.get('CONDA_PY', '36') %}
 #### END - Config version naming
@@ -32,11 +33,12 @@ build:
   number: 0
   script_env:
     - UCX_VERSION
-    - UCX_PROC_VERSION
     - UCX_COMMIT
+    - UCX_BUILD_NUMBER
+    - UCX_PROC_VERSION
     - UCX_PY_VERSION
     - UCX_PY_COMMIT
-    - BUILD_NUMBER
+    - UCX_PY_BUILD_NUMBER
 
 outputs:
   - name: ucx-proc
@@ -57,8 +59,8 @@ outputs:
     version: "{{ ucx_version }}+g{{ ucx_commit }}"
 
     build:
-      number: {{ number }}
-      string: cuda{{ cuda_version }}_{{ number }}
+      number: {{ ucx_number }}
+      string: cuda{{ cuda_version }}_{{ ucx_number }}
       script_env:
         - CUDA_HOME
     requirements:
@@ -74,6 +76,7 @@ outputs:
         - automake
         - autoconf
         - libtool
+        - libgomp      # [linux and not aarch64]
         - make
         - pkg-config
       host:
@@ -93,10 +96,10 @@ outputs:
       summary: Unified Communication X.
 
   - name: ucx-py
-    version: "{{ ucx_py_version }}"
+    version: "{{ ucx_py_version }}+g{{ ucx_commit }}"
     build:
-      number: {{ number }}
-      string: py{{ py_version }}_{{ number }}
+      number: {{ ucx_py_number }}
+      string: py{{ py_version }}_{{ ucx_py_number }}
       skip: true  # [py<36]
       script_env:
         - CUDA_HOME
@@ -117,6 +120,7 @@ outputs:
         - python
         - pip
         - cython >=0.29.14,<3.0.0a0
+        - libhwloc
         - ucx
       run:
         - python
