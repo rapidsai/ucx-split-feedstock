@@ -24,6 +24,7 @@ source:
     folder: ucx
     patches:
       - ipc-cache-threshold.patch
+      - stream_refcount_v1.7.0.patch
   - git_url: https://github.com/rapidsai/ucx-py
     git_rev: {{ ucx_py_commit }}
     folder: ucx-py
