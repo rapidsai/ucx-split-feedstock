@@ -23,8 +23,6 @@ source:
     git_rev: {{ ucx_commit }}
     folder: ucx
     patches:
-      # https://github.com/Akshay-Venkatesh/ucx/tree/topic/ipc-cache-threshold
-      - ipc-cache-threshold.patch
       # https://github.com/openucx/ucx/pull/4646
       - stream_refcount_v1.7.0.patch
   - git_url: https://github.com/rapidsai/ucx-py
