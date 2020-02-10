@@ -1,0 +1,91 @@
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_ep.c b/src/uct/cuda/cuda_ipc/cuda_ipc_ep.c
+index 094b3a2e3..12bdf93c9 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_ep.c
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_ep.c
+@@ -116,6 +116,9 @@ uct_cuda_ipc_post_cuda_async_copy(uct_ep_h tl_ep, uint64_t remote_addr,
+         return status;
+     }
+ 
++    iface->stream_refcount[key->dev_num]++;
++    cuda_ipc_event->stream_id = key->dev_num;
++
+     status = UCT_CUDADRV_FUNC(cuEventRecord(cuda_ipc_event->event, stream));
+     if (UCS_OK != status) {
+         ucs_mpool_put(cuda_ipc_event);
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c b/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c
+index cdc8c24c7..e28ec3bfd 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_iface.c
+@@ -209,6 +209,7 @@ uct_cuda_ipc_progress_event_q(uct_cuda_ipc_iface_t *iface,
+         }
+ 
+         ucs_trace_poll("CUDA_IPC Event Done :%p", cuda_ipc_event);
++        iface->stream_refcount[cuda_ipc_event->stream_id]--;
+         ucs_mpool_put(cuda_ipc_event);
+         count++;
+ 
+@@ -264,16 +265,18 @@ static ucs_status_t uct_cuda_ipc_iface_event_fd_arm(uct_iface_h tl_iface,
+ 
+     if (iface->streams_initialized) {
+         for (i = 0; i < iface->device_count; i++) {
++            if (iface->stream_refcount[i]) {
++                status =
+ #if (__CUDACC_VER_MAJOR__ >= 100000)
+-            status = UCT_CUDADRV_FUNC(cuLaunchHostFunc(iface->stream_d2d[i],
+-                                                       myHostFn, iface));
++                UCT_CUDADRV_FUNC(cuLaunchHostFunc(iface->stream_d2d[i],
++                                                  myHostFn, iface));
+ #else
+-            status = UCT_CUDADRV_FUNC(cuStreamAddCallback(iface->stream_d2d[i],
+-                                                          myHostCallback, iface,
+-                                                          0));
++                UCT_CUDADRV_FUNC(cuStreamAddCallback(iface->stream_d2d[i],
++                                                     myHostCallback, iface, 0));
+ #endif
+-            if (UCS_OK != status) {
+-                return status;
++                if (UCS_OK != status) {
++                    return status;
++                }
+             }
+         }
+     }
+@@ -329,6 +332,8 @@ ucs_status_t uct_cuda_ipc_iface_init_streams(uct_cuda_ipc_iface_t *iface)
+         if (UCS_OK != status) {
+             return status;
+         }
++
++        iface->stream_refcount[i] = 0;
+     }
+ 
+     iface->streams_initialized = 1;
+@@ -430,6 +435,8 @@ static UCS_CLASS_CLEANUP_FUNC(uct_cuda_ipc_iface_t)
+             if (UCS_OK != status) {
+                 continue;
+             }
++
++            ucs_assert(self->stream_refcount[i] == 0);
+         }
+         self->streams_initialized = 0;
+     }
+diff --git a/src/uct/cuda/cuda_ipc/cuda_ipc_iface.h b/src/uct/cuda/cuda_ipc/cuda_ipc_iface.h
+index c0eb92d83..c2815a1b2 100644
+--- a/src/uct/cuda/cuda_ipc/cuda_ipc_iface.h
++++ b/src/uct/cuda/cuda_ipc/cuda_ipc_iface.h
+@@ -28,6 +28,8 @@ typedef struct uct_cuda_ipc_iface {
+     int              streams_initialized;     /* indicates if stream created */
+     CUstream         stream_d2d[UCT_CUDA_IPC_MAX_PEERS];
+                                               /* per-peer stream */
++    unsigned long    stream_refcount[UCT_CUDA_IPC_MAX_PEERS];
++                                              /* per stream outstanding ops */
+     struct {
+         unsigned     max_poll;                /* query attempts w.o success */
+         int          enable_cache;            /* enable/disable ipc handle cache */
+@@ -48,6 +50,7 @@ typedef struct uct_cuda_ipc_iface_config {
+ typedef struct uct_cuda_ipc_event_desc {
+     CUevent           event;
+     void              *mapped_addr;
++    unsigned          stream_id;
+     uct_completion_t  *comp;
+     ucs_queue_elem_t  queue;
+     uct_cuda_ipc_ep_t *ep;
