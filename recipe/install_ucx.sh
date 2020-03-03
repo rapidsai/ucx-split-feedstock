@@ -9,7 +9,7 @@ fi
 
 cd "${SRC_DIR}/ucx"
 ./autogen.sh
-./configure \
+./configure-release \
     --build="${BUILD}" \
     --host="${HOST}" \
     --prefix="${PREFIX}" \
