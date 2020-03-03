@@ -25,6 +25,7 @@ cd build_ucx
     --with-cm \
     --with-rdmacm \
     --with-verbs \
+    CPPFLAGS="-I/$CUDA_HOME/include" \
     ${CUDA_CONFIG_ARG}
 
 make -j${CPU_COUNT}
