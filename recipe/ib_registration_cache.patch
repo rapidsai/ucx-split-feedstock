@@ -1,5 +1,5 @@
 diff --git a/src/ucs/Makefile.am b/src/ucs/Makefile.am
-index 2bd0a8d50..17f70c091 100644
+index 03786e71d..6594b1b8a 100644
 --- a/src/ucs/Makefile.am
 +++ b/src/ucs/Makefile.am
 @@ -9,9 +9,9 @@ AUTOMAKE_OPTIONS    = nostdinc # avoid collision with built-in debug.h
@@ -16,7 +16,7 @@ index 2bd0a8d50..17f70c091 100644
  libucs_la_LIBADD   = $(LIBM) $(top_builddir)/src/ucm/libucm.la
  
 diff --git a/src/ucs/memory/rcache.c b/src/ucs/memory/rcache.c
-index d88452a13..7754472a3 100644
+index 4d0bbe01e..c540e7890 100644
 --- a/src/ucs/memory/rcache.c
 +++ b/src/ucs/memory/rcache.c
 @@ -16,6 +16,7 @@
@@ -27,7 +27,7 @@ index d88452a13..7754472a3 100644
  
  #include "rcache.h"
  #include "rcache_int.h"
-@@ -470,17 +471,54 @@ ucs_rcache_create_region(ucs_rcache_t *rcache, void *address, size_t length,
+@@ -470,17 +471,56 @@ ucs_rcache_create_region(ucs_rcache_t *rcache, void *address, size_t length,
      ucs_status_t status;
      int error, merged;
  
@@ -57,6 +57,8 @@ index d88452a13..7754472a3 100644
 +    if ((cu_err == CUDA_SUCCESS) && (memType == CU_MEMORYTYPE_DEVICE)) {
 +        if (isManaged) {
 +            /* *mem_type_p = UCS_MEMORY_TYPE_CUDA_MANAGED;*/
++            ucs_error("managed memory is not supported");
++            return UCS_ERR_UNSUPPORTED;
 +        } else {
 +            /* *mem_type_p = UCS_MEMORY_TYPE_CUDA; */
 +            cu_err = cuMemGetAddressRange(&pbase, &psize, (CUdeviceptr) address);
@@ -87,4 +89,3 @@ index d88452a13..7754472a3 100644
      region = NULL;
      merged = 0;
  
-
