@@ -149,7 +149,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - Akshay-Venkatesh
     - jakirkham
+    - mike-wendt
+    - pentschev
     - quasiben
-    - TomAugspurger
