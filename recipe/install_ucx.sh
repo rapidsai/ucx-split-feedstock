@@ -10,9 +10,10 @@ fi
 cd "${SRC_DIR}/ucx"
 # needed to clean out directory -- some patches will change
 # Makefile.am
-git clean -fdx
 ./autogen.sh
-./configure \
+mkdir -p build_ucx
+cd build_ucx
+../contrib/configure-release \
     --build="${BUILD}" \
     --host="${HOST}" \
     --prefix="${PREFIX}" \
@@ -28,3 +29,4 @@ git clean -fdx
 
 make -j${CPU_COUNT}
 make install
+cd -
