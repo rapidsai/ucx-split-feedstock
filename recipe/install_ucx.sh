@@ -8,8 +8,11 @@ if [ ${cuda_compiler_version} != "None" ]; then
 fi
 
 cd "${SRC_DIR}/ucx"
+# needed to clean out directory -- some patches will change
+# Makefile.am
+git clean -fdx
 ./autogen.sh
-./configure-release \
+./configure \
     --build="${BUILD}" \
     --host="${HOST}" \
     --prefix="${PREFIX}" \
