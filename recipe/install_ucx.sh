@@ -10,6 +10,8 @@ fi
 cd "${SRC_DIR}/ucx"
 # needed to clean out directory -- some patches will change
 # Makefile.am
+git clean -fdx
+cat src/ucs/Makefile.am
 ./autogen.sh
 mkdir -p build_ucx
 cd build_ucx
@@ -25,8 +27,8 @@ cd build_ucx
     --with-cm \
     --with-rdmacm \
     --with-verbs \
+    ${CUDA_CONFIG_ARG} \
     CPPFLAGS="-I/$CUDA_HOME/include" \
-    ${CUDA_CONFIG_ARG}
 
 make -j${CPU_COUNT}
 make install
