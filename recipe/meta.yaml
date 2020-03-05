@@ -132,10 +132,6 @@ outputs:
       run_constrained:
         - ucx-proc * {{ ucx_proc_type }}
     script: install_ucx-py.sh
-    test:
-      # commenting out while we figure out libcuda.so issues
-      #imports:
-      #  - ucp
     about:
       home: https://github.com/rapidsai/ucx-py
       license: BSD-3-Clause
