@@ -26,6 +26,7 @@ source:
       # https://github.com/openucx/ucx/pull/4646
       - stream_refcount_v1.7.0.patch
       - ib_registration_cache.patch  # [cuda_compiler_version != "None"]
+      - add-page-alignmnet.patch
   - git_url: https://github.com/rapidsai/ucx-py
     git_rev: {{ ucx_py_commit }}
     folder: ucx-py

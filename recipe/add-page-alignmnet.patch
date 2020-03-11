@@ -1,0 +1,21 @@
+diff --git a/src/ucs/memory/rcache.c b/src/ucs/memory/rcache.c
+index 7754472a3..93fe07e97 100644
+--- a/src/ucs/memory/rcache.c
++++ b/src/ucs/memory/rcache.c
+@@ -496,14 +496,14 @@ retry:
+             /* *mem_type_p = UCS_MEMORY_TYPE_CUDA; */
+             cu_err = cuMemGetAddressRange(&pbase, &psize, (CUdeviceptr) address);
+             if (cu_err == CUDA_SUCCESS) {
++                /*
+                 start = pbase;
+                 end   = pbase + psize;
+-                /*
++                */
+                 start = ucs_align_down_pow2((uintptr_t)pbase,
+                         rcache->params.alignment);
+                 end   = ucs_align_up_pow2  ((uintptr_t)pbase + psize,
+                         rcache->params.alignment);
+-                */
+             } else {
+                 start = ucs_align_down_pow2((uintptr_t)address,
+                         rcache->params.alignment);
