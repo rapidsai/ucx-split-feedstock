@@ -59,7 +59,7 @@ conda build --override-channels -c conda-forge -c nvidia . --output > conda.outp
 # Uploda files to anaconda
 if [ ! -z "${MY_UPLOAD_KEY}" ] ; then
   gpuci_logger "Upload token present, uploading..."
-  cat conda.output | xargs gpuci_retry anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} --label main --force
+  cat conda.output | xargs gpuci_retry anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} --label main
 else
   gpuci_logger "Upload token 'MY_UPLOAD_KEY' not present, skipping upload..."
 fi
