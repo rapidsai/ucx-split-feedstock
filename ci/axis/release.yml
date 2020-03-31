@@ -5,7 +5,7 @@ CONDA_USERNAME:
   - rapidsai
 
 UCX_VERSION:
-  - 1.7.0
+  - 1.7.0dev
 
 UCX_COMMIT:
   - v1.7.x
@@ -17,7 +17,6 @@ UCX_PY_COMMIT:
   - master
 
 CUDA_VERSION:
+  - 10.2
   - 10.1
   - 10.0
-  - 9.2
-  
