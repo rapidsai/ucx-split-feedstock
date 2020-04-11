@@ -27,6 +27,7 @@ source:
       - stream_refcount_v1.7.0.patch
       - ib_registration_cache.patch  # [cuda_compiler_version != "None"]
       - add-page-alignment.patch
+      - uct-sockcm-priv-dadta-len.patch
   - git_url: https://github.com/rapidsai/ucx-py
     git_rev: {{ ucx_py_commit }}
     folder: ucx-py
