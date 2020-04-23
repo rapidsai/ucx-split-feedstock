@@ -1,16 +1,16 @@
 #### START - Config version naming (right side is default value)
-{% set ucx_version = environ.get("UCX_VERSION", "1.7.0dev").lstrip('v') %}
+{% set ucx_version = environ.get("UCX_VERSION", "1.8.0dev").lstrip('v') %}
 {% set ucx_number = environ.get("UCX_BUILD_NUMBER", 0) %}
 {% set ucx_proc_version = environ.get("UCX_PROC_VERSION", "1.0.0") %}
-{% set ucx_py_version = environ.get("UCX_PY_VERSION", "0.12a").lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
+{% set ucx_py_version = environ.get("UCX_PY_VERSION", "0.14a").lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
 {% set ucx_py_number = environ.get("UCX_PY_BUILD_NUMBER", 0) %}
 {% set cuda_version = '.'.join(environ.get('CUDA_VERSION', '9.2').split('.')[:2]) %}
 {% set py_version = environ.get('CONDA_PY', '36') %}
 #### END - Config version naming
 
 #### START - Config source commits (right side is default value)
-{% set ucx_commit = environ.get("UCX_COMMIT", "430ae7e") %}
-{% set ucx_py_commit = environ.get("UCX_PY_COMMIT", "486852e") %}
+{% set ucx_commit = environ.get("UCX_COMMIT", "d8e0557") %}
+{% set ucx_py_commit = environ.get("UCX_PY_COMMIT", "7cf2144") %}
 #### END - Config source commits
 
 {% set ucx_proc_type = "cpu" if cuda_compiler_version == "None" else "gpu" %}
@@ -23,8 +23,6 @@ source:
     git_rev: {{ ucx_commit }}
     folder: ucx
     patches:
-      # https://github.com/openucx/ucx/pull/4646
-      - stream_refcount_v1.7.0.patch
       - ib_registration_cache.patch  # [cuda_compiler_version != "None"]
       - add-page-alignment.patch
   - git_url: https://github.com/rapidsai/ucx-py
