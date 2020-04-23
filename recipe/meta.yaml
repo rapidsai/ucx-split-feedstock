@@ -9,8 +9,8 @@
 #### END - Config version naming
 
 #### START - Config source commits (right side is default value)
-{% set ucx_commit = environ.get("UCX_COMMIT", "430ae7e") %}
-{% set ucx_py_commit = environ.get("UCX_PY_COMMIT", "486852e") %}
+{% set ucx_commit = environ.get("UCX_COMMIT", "d8e0557") %}
+{% set ucx_py_commit = environ.get("UCX_PY_COMMIT", "7cf2144") %}
 #### END - Config source commits
 
 {% set ucx_proc_type = "cpu" if cuda_compiler_version == "None" else "gpu" %}
