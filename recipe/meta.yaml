@@ -24,7 +24,7 @@ source:
     folder: ucx
     patches:
       - ib_registration_cache.patch  # [cuda_compiler_version != "None"]
-      - add-page-alignment.patch
+      - add-page-alignment.patch # [cuda_compiler_version != "None"]
   - git_url: https://github.com/rapidsai/ucx-py
     git_rev: {{ ucx_py_commit }}
     folder: ucx-py
@@ -61,9 +61,9 @@ outputs:
 
     build:
       number: {{ ucx_number }}
-      string: cuda{{ cuda_version }}_{{ ucx_number }}
+      string: cuda{{ cuda_version }}_{{ ucx_number }} # [cuda_compiler_version != "None"]
       script_env:
-        - CUDA_HOME
+        - CUDA_HOME # [cuda_compiler_version != "None"]
     requirements:
       build:
         - {{ compiler("c") }}
@@ -101,9 +101,9 @@ outputs:
     build:
       number: {{ ucx_py_number }}
       string: py{{ py_version }}_{{ ucx_py_number }}
-      skip: true  # [py<36 or cuda_compiler_version != "10.2"]
+      skip: true  # [py<36 or (cuda_compiler_version != "10.2" and cuda_compiler_version != "None")]
       script_env:
-        - CUDA_HOME
+        - CUDA_HOME # [cuda_compiler_version != "None"]
       ignore_run_exports:
         - cudatoolkit                    # [cuda_compiler_version != "None"]
 
