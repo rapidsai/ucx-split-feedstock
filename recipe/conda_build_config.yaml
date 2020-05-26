@@ -1,2 +1,12 @@
+c_compiler:
+  - gcc                        # [linux]
+c_compiler_version:            # [unix]
+  - 7.3                        # [linux64 or aarch64]
+cxx_compiler:
+  - gxx                        # [linux]
+cxx_compiler_version:          # [unix]
+  - 7.3                        # [linux64 or aarch64]
+
+
 channel_targets:
   - conda-forge rc_ucx
