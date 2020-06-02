@@ -1,5 +1,6 @@
 FROM_IMAGE:
   - condaforge/linux-anvil-cuda
+  - condaforge/linux-anvil-comp7
 
 CONDA_USERNAME:
   - rapidsai
@@ -21,3 +22,13 @@ CUDA_VERSION:
   - 10.1
   - 10.0
   - None
+
+exclude:
+  - FROM_IMAGE: condaforge/linux-anvil-comp7
+    CUDA_VERSION: 10.2
+  - FROM_IMAGE: condaforge/linux-anvil-comp7
+    CUDA_VERSION: 10.1
+  - FROM_IMAGE: condaforge/linux-anvil-comp7
+    CUDA_VERSION: 10.0
+  - FROM_IMAGE: condaforge/linux-anvil-cuda
+    CUDA_VERSION: None
