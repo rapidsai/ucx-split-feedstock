@@ -5,19 +5,19 @@ FROM_IMAGE:
 CONDA_USERNAME:
   - rapidsai
 
-UCX_VERSION:
+UCX_VER:
   - 1.8.0dev
 
 UCX_COMMIT:
   - v1.8.x
 
-UCX_PROC_VERSION:
+UCX_PROC_VER:
   - 1.0.0
 
 UCX_PY_COMMIT:
   - master
 
-CUDA_VERSION:
+CUDA_VER:
   - 10.2
   - 10.1
   - 10.0
@@ -25,10 +25,10 @@ CUDA_VERSION:
 
 exclude:
   - FROM_IMAGE: condaforge/linux-anvil-comp7
-    CUDA_VERSION: 10.2
+    CUDA_VER: 10.2
   - FROM_IMAGE: condaforge/linux-anvil-comp7
-    CUDA_VERSION: 10.1
+    CUDA_VER: 10.1
   - FROM_IMAGE: condaforge/linux-anvil-comp7
-    CUDA_VERSION: 10.0
+    CUDA_VER: 10.0
   - FROM_IMAGE: condaforge/linux-anvil-cuda
-    CUDA_VERSION: None
+    CUDA_VER: None

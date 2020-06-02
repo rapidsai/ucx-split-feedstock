@@ -17,18 +17,18 @@ gpuci_logger "Git clone ucx/ucx-py to get version info for build..."
 git clone https://github.com/openucx/ucx.git git-ucx
 cd git-ucx
 git checkout $UCX_COMMIT
-export UCX_VERSION=`git describe --abbrev=0 --tags`
+export UCX_VER=`git describe --abbrev=0 --tags`
 export UCX_LONG_COMMIT=`git rev-parse HEAD`
 export UCX_COMMIT=${UCX_LONG_COMMIT:0:7}
-export UCX_BUILD_NUMBER=`git rev-list ${UCX_VERSION}..HEAD --count`
+export UCX_BUILD_NUMBER=`git rev-list ${UCX_VER}..HEAD --count`
 cd $WORKSPACE
 git clone https://github.com/rapidsai/ucx-py.git git-ucxpy
 cd git-ucxpy
 git checkout $UCX_PY_COMMIT
-export UCX_PY_VERSION=`git describe --abbrev=0 --tags`
+export UCX_PY_VER=`git describe --abbrev=0 --tags`
 UCX_PY_LONG_COMMIT=`git rev-parse HEAD`
 export UCX_PY_COMMIT=${UCX_PY_LONG_COMMIT:0:7}
-export UCX_PY_BUILD_NUMBER=`git rev-list ${UCX_PY_VERSION}..HEAD --count`
+export UCX_PY_BUILD_NUMBER=`git rev-list ${UCX_PY_VER}..HEAD --count`
 cd $WORKSPACE
 
 # Set VERSION_SUFFIX if nightly job
@@ -44,13 +44,13 @@ env > env.list
 
 # Get build container
 gpuci_logger "Pull docker container for build..."
-if [ "$CUDA_VERSION" == "None"] ; then
+if [ "$CUDA_VER" == "None"] ; then
   # Checkout latest instead
-  CUDA_VERSION="latest"
+  CUDA_VER="latest"
 fi
-gpuci_retry docker pull ${FROM_IMAGE}:${CUDA_VERSION}
+gpuci_retry docker pull ${FROM_IMAGE}:${CUDA_VER}
 
 # Run conda build script
 gpuci_logger "Run docker and kick off build script..."
 docker run --rm --user root --env-file env.list -v $WORKSPACE:$WORKSPACE \
-            --entrypoint "bash" ${FROM_IMAGE}:${CUDA_VERSION} $WORKSPACE/ci/cpu/build.sh
+            --entrypoint "bash" ${FROM_IMAGE}:${CUDA_VER} $WORKSPACE/ci/cpu/build.sh
