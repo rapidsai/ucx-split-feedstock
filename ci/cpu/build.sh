@@ -30,7 +30,11 @@ xargs yum -y install < recipe/yum_requirements.txt
 
 # Fetch pkgs for build
 gpuci_logger "Install conda pkgs needed for build..."
-conda install -y -k -c nvidia -c conda-forge -c defaults conda-verify cudatoolkit=$CUDA_VER
+if [ "$CUDA_VER" != "None" ] ; then
+  conda install -y -k -c nvidia -c conda-forge -c defaults conda-verify cudatoolkit=$CUDA_VER
+else
+  conda install -y -k -c nvidia -c conda-forge -c defaults conda-verify
+fi
 
 # Print diagnostic information
 gpuci_logger "Print conda info..."
