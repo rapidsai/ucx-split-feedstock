@@ -129,8 +129,6 @@ outputs:
         - numpy
         - psutil
         - ucx {{ ucx_version }}+g{{ ucx_commit }}
-      run_constrained:
-        - ucx-proc * {{ ucx_proc_type }}
     script: install_ucx-py.sh
     about:
       home: https://github.com/rapidsai/ucx-py
