@@ -5,7 +5,7 @@ Home: https://github.com/openucx/ucx
 
 Package license: BSD-3-Clause
 
-Feedstock license: BSD 3-Clause
+Feedstock license: BSD-3-Clause
 
 Summary: Unified Communication X.
 
