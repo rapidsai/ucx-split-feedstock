@@ -9,7 +9,7 @@ set -ex
 export HOME=$WORKSPACE
 
 # Install gpuCI tools
-curl -s https://raw.githubusercontent.com/rapidsai/gpuci-mgmt/master/gpuci-tools.sh | bash
+curl -s https://raw.githubusercontent.com/rapidsai/gpuci-tools/main/gpuci-tools.sh | bash
 source ~/.bashrc
 
 # Get version info
