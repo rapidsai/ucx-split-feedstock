@@ -44,11 +44,7 @@ env > env.list
 
 # Get build container
 gpuci_logger "Pull docker container for build..."
-BUILD_IMAGE="${FROM_IMAGE}:${CUDA_VER}"
-if [ "$CUDA_VER" == "None" ] ; then
-  # Checkout latest instead
-  BUILD_IMAGE="${FROM_IMAGE}:latest"
-fi
+BUILD_IMAGE="${FROM_IMAGE}"
 
 # Run conda build script
 gpuci_logger "Run docker and kick off build script..."
