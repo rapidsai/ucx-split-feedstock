@@ -35,6 +35,7 @@ if [ "$CUDA_VER" != "None" ] ; then
 else
   conda install -y -k -c nvidia -c conda-forge -c defaults conda-verify
 fi
+conda install -y -k -c conda-forge conda-build anaconda-client ripgrep
 
 # Print diagnostic information
 gpuci_logger "Print conda info..."
