@@ -1,6 +1,5 @@
 FROM_IMAGE:
-  - condaforge/linux-anvil-cuda
-  - condaforge/linux-anvil-comp7
+  - gpuci/miniconda-cuda:11.0-devel-centos7
 
 CONDA_USERNAME:
   - rapidsai-nightly
@@ -18,14 +17,6 @@ UCX_PY_COMMIT:
   - branch-0.15
 
 CUDA_VER:
-  - 10.2
-  - 10.1
-  - None
+  - 11.0
 
 exclude:
-  - FROM_IMAGE: condaforge/linux-anvil-comp7
-    CUDA_VER: 10.2
-  - FROM_IMAGE: condaforge/linux-anvil-comp7
-    CUDA_VER: 10.1
-  - FROM_IMAGE: condaforge/linux-anvil-cuda
-    CUDA_VER: None
