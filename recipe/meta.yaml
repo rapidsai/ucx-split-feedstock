@@ -103,7 +103,7 @@ outputs:
     build:
       number: {{ ucx_py_number }}
       string: py{{ py_version }}_{{ ucx_py_number }}
-      skip: true                         # [py<36]
+      skip: true                         # [py<37]
       skip: true                         # [cuda_compiler_version != "None"]
       script_env:
         - CUDA_HOME                      # [cuda_compiler_version != "None"]
