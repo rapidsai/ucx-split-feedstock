@@ -105,7 +105,7 @@ outputs:
       string: py{{ py_version }}_{{ ucx_py_number }}
       skip: true  # [py<36 or cuda_compiler_version != "10.2"]
       script_env:
-        - CUDA_HOME # [cuda_compiler_version != "None"]
+        - CUDA_HOME                      # [cuda_compiler_version != "None"]
       ignore_run_exports:
         - cudatoolkit                    # [cuda_compiler_version != "None"]
 
