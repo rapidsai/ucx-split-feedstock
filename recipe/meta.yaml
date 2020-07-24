@@ -5,7 +5,7 @@
 {% set ucx_py_version = environ.get("UCX_PY_VER", "0.14a").lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
 {% set ucx_py_number = environ.get("UCX_PY_BUILD_NUMBER", 0) %}
 {% set cuda_version = '.'.join(environ.get('CUDA_VER', '9.2').split('.')[:2]) %}
-{% set py_version = environ.get('CONDA_PY', '36') %}
+{% set py_version = environ.get('CONDA_PY', '37') %}
 #### END - Config version naming
 
 #### START - Config source commits (right side is default value)
@@ -103,9 +103,10 @@ outputs:
     build:
       number: {{ ucx_py_number }}
       string: py{{ py_version }}_{{ ucx_py_number }}
-      skip: true  # [py<36 or cuda_compiler_version != "10.2"]
+      skip: true                         # [py<37]
+      skip: true                         # [cuda_compiler_version != "None"]
       script_env:
-        - CUDA_HOME # [cuda_compiler_version != "None"]
+        - CUDA_HOME                      # [cuda_compiler_version != "None"]
       ignore_run_exports:
         - cudatoolkit                    # [cuda_compiler_version != "None"]
 
