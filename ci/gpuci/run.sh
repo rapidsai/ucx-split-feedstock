@@ -52,5 +52,5 @@ fi
 
 # Run conda build script
 gpuci_logger "Run docker and kick off build script..."
-docker run --rm --user root --env-file env.list -v $WORKSPACE:$WORKSPACE \
+docker run --rm --user root --env-file env.list --runtime=nvidia -v $WORKSPACE:$WORKSPACE \
             --entrypoint "bash" ${BUILD_IMAGE} $WORKSPACE/ci/cpu/build.sh
