@@ -35,8 +35,7 @@ curl http://content.mellanox.com/ofed/MLNX_OFED-5.0-2.1.8.0/MLNX_OFED_LINUX-5.0-
 cd /tmp
 tar xzf ofed.tgz
 cd MLNX*
-rpm -i ./RPMS_UPSTREAM_LIBS/libibverbs* 
-
+rpm -i ./RPMS_UPSTREAM_LIBS/libibverbs* ./RPMS_UPSTREAM_LIBS/rdma-core*
 # Fetch pkgs for build
 gpuci_logger "Install conda pkgs needed for build..."
 if [ "$CUDA_VER" != "None" ] ; then
