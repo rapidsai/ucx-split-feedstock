@@ -31,8 +31,8 @@ yum install -y libibcm-devel libibverbs-devel librdmacm-devel numactl-devel
 
 # Output gcc/g++ versions
 gpuci_logger "Check gcc/g++ versions..."
-gcc --version
-g++ --version
+x86_64-conda-linux-gnu-cc --version
+x86_64-conda-linux-gnu-++ --version
 
 # Fetch pkgs for build
 gpuci_logger "Install conda pkgs needed for build..."
