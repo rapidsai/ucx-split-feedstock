@@ -34,7 +34,7 @@ gpuci_logger "Install OFED..."
 curl http://content.mellanox.com/ofed/MLNX_OFED-5.0-2.1.8.0/MLNX_OFED_LINUX-5.0-2.1.8.0-rhel7.8-x86_64.tgz > /tmp/ofed.tgz
 cd /tmp
 tar xzf ofed.tgz
-cd MLNX*
+cd MLNX*/RPMS
 rpm -i ./UPSTREAM_LIBS/libibverbs* ./UPSTREAM_LIBS/ibverbs-providers*
 
 # Fetch pkgs for build
