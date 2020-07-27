@@ -26,7 +26,8 @@ cp -rT $WORKSPACE ~
 
 # Install yum reqs
 gpuci_logger "Install system libraries needed for build..."
-cat recipe/yum_requirements.txt | xargs yum -y install
+#cat recipe/yum_requirements.txt | xargs yum -y install
+yum install -y libibcm-devel libibverbs-devel librdmacm-devel numactl-devel
 
 # Fetch pkgs for build
 gpuci_logger "Install conda pkgs needed for build..."
