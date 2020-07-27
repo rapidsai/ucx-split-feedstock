@@ -29,6 +29,11 @@ gpuci_logger "Install system libraries needed for build..."
 #cat recipe/yum_requirements.txt | xargs yum -y install
 yum install -y libibcm-devel libibverbs-devel librdmacm-devel numactl-devel
 
+# Output gcc/g++ versions
+gpuci_logger "Check gcc/g++ versions..."
+gcc --version
+g++ --version
+
 # Fetch pkgs for build
 gpuci_logger "Install conda pkgs needed for build..."
 if [ "$CUDA_VER" != "None" ] ; then
