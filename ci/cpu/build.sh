@@ -29,13 +29,13 @@ gpuci_logger "Install system libraries needed for build..."
 #cat recipe/yum_requirements.txt | xargs yum -y install
 yum install -y libibcm-devel libibverbs-devel librdmacm-devel numactl-devel
 
-# Install OFED
-gpuci_logger "Install OFED..."
+# Install ibverbs from OFED
+gpuci_logger "Install ibverbs from OFED..."
 curl http://content.mellanox.com/ofed/MLNX_OFED-5.0-2.1.8.0/MLNX_OFED_LINUX-5.0-2.1.8.0-rhel7.8-x86_64.tgz > /tmp/ofed.tgz
 cd /tmp
 tar xzf ofed.tgz
-cd MLNX*/RPMS
-rpm -i ./UPSTREAM_LIBS/libibverbs* ./UPSTREAM_LIBS/ibverbs-providers*
+cd MLNX*
+rpm -i ./RPMS_UPSTREAM_LIBS/libibverbs* 
 
 # Fetch pkgs for build
 gpuci_logger "Install conda pkgs needed for build..."
