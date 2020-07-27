@@ -26,16 +26,16 @@ cp -rT $WORKSPACE ~
 
 # Install yum reqs
 gpuci_logger "Install system libraries needed for build..."
-#cat recipe/yum_requirements.txt | xargs yum -y install
-yum install -y pkgconfig
+cat recipe/yum_requirements.txt | xargs yum -y install
 
 # Install OFED
-gpuci_logger "Install OFED..."
-curl http://content.mellanox.com/ofed/MLNX_OFED-5.0-2.1.8.0/MLNX_OFED_LINUX-5.0-2.1.8.0-rhel7.8-x86_64.tgz > /tmp/ofed.tgz
-cd /tmp
-tar xzf ofed.tgz
-cd MLNX*
-yum localinstall -y ./RPMS_UPSTREAM_LIBS/lib* ./RPMS_UPSTREAM_LIBS/ibacm* ./RPMS_UPSTREAM_LIBS/rdma* ./RPMS_UPSTREAM_LIBS/infiniband-diags* ./RPMS/MLNX_LIBS/librdmacm-devel* ./RPMS/MLNX_LIBS/ibacm-devel* ./RPMS/MLNX_LIBS/libibverbs-devel*
+#gpuci_logger "Install OFED..."
+#curl http://content.mellanox.com/ofed/MLNX_OFED-5.0-2.1.8.0/MLNX_OFED_LINUX-5.0-2.1.8.0-rhel7.8-x86_64.tgz > /tmp/ofed.tgz
+#cd /tmp
+#tar xzf ofed.tgz
+#cd MLNX*
+#yum localinstall -y ./RPMS_UPSTREAM_LIBS/lib* ./RPMS_UPSTREAM_LIBS/ibacm* ./RPMS_UPSTREAM_LIBS/rdma* ./RPMS_UPSTREAM_LIBS/infiniband-diags*
+
 # Fetch pkgs for build
 gpuci_logger "Install conda pkgs needed for build..."
 if [ "$CUDA_VER" != "None" ] ; then
