@@ -64,11 +64,11 @@ env
 
 # Start conda build
 gpuci_logger "Starting conda build..."
-conda build --override-channels -c rapidsai-nightly -c conda-forge -c nvidia .
+conda build --override-channels -c rapidsai-nightly -c nvidia -c conda-forge .
 
 # Get conda build output
 gpuci_logger "Getting conda build output..."
-conda build --override-channels -c rapidsai-nightly -c conda-forge -c nvidia . --output > conda.output
+conda build --override-channels -c rapidsai-nightly -c nvidia -c conda-forge . --output > conda.output
 
 # Uploda files to anaconda
 if [ ! -z "${MY_UPLOAD_KEY}" ] ; then
