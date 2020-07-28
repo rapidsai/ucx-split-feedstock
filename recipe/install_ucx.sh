@@ -7,7 +7,8 @@ if [ ${cuda_compiler_version} != "None" ]; then
     CUDA_CONFIG_ARG="--with-cuda=${CUDA_HOME}"
 fi
 
-ldd librdmacm
+find /usr/ -iname "librdmacm*"
+find /opt/conda/ -iname "librdmacm*"
 
 cd "${SRC_DIR}/ucx"
 ./autogen.sh
