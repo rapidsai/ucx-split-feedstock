@@ -13,7 +13,7 @@ find /opt/conda/ -iname "librdmacm*"
 cd "${SRC_DIR}/ucx"
 ./autogen.sh
 ./configure \
-    --build="${BUILD_PREFIX}" \
+    --build="${BUILD}" \
     --host="${HOST}" \
     --prefix="${PREFIX}" \
     --with-sysroot \
