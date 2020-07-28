@@ -64,7 +64,7 @@ env
 
 # Start conda build
 gpuci_logger "Starting conda build..."
-conda build --override-channels -c rapidsai-nightly -c nvidia -c conda-forge .
+conda build --debug --override-channels -c rapidsai-nightly -c nvidia -c conda-forge .
 
 # Get conda build output
 gpuci_logger "Getting conda build output..."
