@@ -13,7 +13,7 @@ find /opt/conda/ -iname "librdmacm*"
 cd "${SRC_DIR}/ucx"
 ./autogen.sh
 ./configure \
-    --build="${BUILD}" \
+    --build="${BUILD_PREFIX}" \
     --host="${HOST}" \
     --prefix="${PREFIX}" \
     --with-sysroot \
@@ -21,8 +21,8 @@ cd "${SRC_DIR}/ucx"
     --enable-mt \
     --enable-numa \
     --with-gnu-ld \
-    --with-rdmacm="${BUILD}" \
-    --with-verbs="${BUILD}" \
+    --with-rdmacm="${BUILD_PREFIX}" \
+    --with-verbs="${BUILD_PREFIX}" \
     ${CUDA_CONFIG_ARG}
 ls -la
 cat config.log
