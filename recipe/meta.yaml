@@ -72,10 +72,12 @@ outputs:
         - sysroot_linux-64 2.17 # [linux64]
         - {{ compiler("cxx") }}
         - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
-        - {{ cdt("libnl") }}
+        #- {{ cdt("libnl") }}
+        - libnl-cos7-x86_64
         #- {{ cdt("rdma-core-devel") }}
         - rdma-core-devel-cos7-x86_64
-        - {{ cdt("numactl-devel") }}
+        #- {{ cdt("numactl-devel") }}
+        - numactl-devel-cos7-x86_64
         - automake
         - autoconf
         - libtool
@@ -115,10 +117,12 @@ outputs:
         - sysroot_linux-64 2.17 # [linux64]
         - {{ compiler("cxx") }}
         - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
-        - {{ cdt("libnl") }}
+        #- {{ cdt("libnl") }}
+        - libnl-cos7-x86_64
         #- {{ cdt("rdma-core") }}
         - rdma-core-cos7-x86_64
-        - {{ cdt("numactl") }}
+        #- {{ cdt("numactl") }}
+        - numactl-cos7-x86_64
       host:
         - python
         - pip
