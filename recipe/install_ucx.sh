@@ -21,8 +21,8 @@ cd "${SRC_DIR}/ucx"
     --enable-mt \
     --enable-numa \
     --with-gnu-ld \
-    --with-rdmacm \
-    --with-verbs \
+    --with-rdmacm="${BUILD}" \
+    --with-verbs="${BUILD}" \
     ${CUDA_CONFIG_ARG}
 ls -la
 cat config.log
