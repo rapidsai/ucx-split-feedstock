@@ -73,7 +73,8 @@ outputs:
         - {{ compiler("cxx") }}
         - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
         - {{ cdt("libnl") }}
-        - {{ cdt("rdma-core-devel") }}
+        #- {{ cdt("rdma-core-devel") }}
+        - rdma-core-devel-cos7-x86_64
         - {{ cdt("numactl-devel") }}
         - automake
         - autoconf
@@ -115,7 +116,8 @@ outputs:
         - {{ compiler("cxx") }}
         - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
         - {{ cdt("libnl") }}
-        - {{ cdt("rdma-core") }}
+        #- {{ cdt("rdma-core") }}
+        - rdma-core-cos7-x86_64
         - {{ cdt("numactl") }}
       host:
         - python
