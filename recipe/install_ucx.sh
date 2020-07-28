@@ -1,7 +1,7 @@
 #!/bin/bash
 
-set -xeuo pipefail
-
+set -xuo pipefail
+set +e
 CUDA_CONFIG_ARG=""
 if [ ${cuda_compiler_version} != "None" ]; then
     CUDA_CONFIG_ARG="--with-cuda=${CUDA_HOME}"
@@ -24,6 +24,8 @@ cd "${SRC_DIR}/ucx"
     --with-rdmacm \
     --with-verbs \
     ${CUDA_CONFIG_ARG}
-
+ls -la ${BUILD}
+cat ${BUILD}/config.log
+exit 1
 make -j${CPU_COUNT}
 make install
