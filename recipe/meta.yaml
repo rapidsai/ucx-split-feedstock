@@ -72,7 +72,7 @@ outputs:
         - sysroot_linux-64 2.17 # [linux64]
         - {{ compiler("cxx") }}
         - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
-        - {{ cdt("libnl") }}
+        - {{ cdt("libnl3") }}
         - {{ cdt("rdma-core-devel") }}
         - {{ cdt("numactl-devel") }}
         - automake
