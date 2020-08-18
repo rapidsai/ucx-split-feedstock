@@ -20,7 +20,6 @@ cd "${SRC_DIR}/ucx"
     --with-gnu-ld \
     --with-cm \
     --with-rdmacm \
-    --with-verbs \
     ${CUDA_CONFIG_ARG}
 
 make -j${CPU_COUNT}

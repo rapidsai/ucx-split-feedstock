@@ -73,7 +73,6 @@ outputs:
         - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
         - {{ cdt("libnl") }}
         - {{ cdt("libibcm-devel") }}
-        - {{ cdt("libibverbs-devel") }}
         - {{ cdt("librdmacm-devel") }}
         - {{ cdt("numactl-devel") }}
         - automake
@@ -117,7 +116,6 @@ outputs:
         - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
         - {{ cdt("libnl") }}
         - {{ cdt("libibcm") }}
-        - {{ cdt("libibverbs") }}
         - {{ cdt("librdmacm") }}
         - {{ cdt("numactl") }}
       host:
