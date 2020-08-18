@@ -1,3 +1,2 @@
-libibcm-devel
 librdmacm-devel
 numactl-devel
