@@ -71,7 +71,7 @@ outputs:
         - {{ compiler("c") }}
         - {{ compiler("cxx") }}
         - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
-        - {{ cdt("numactl-devel") }}
+        - {{ cdt("numactl-devel") }}     # [ not aarch64 ]
         - automake
         - autoconf
         - libtool
@@ -111,7 +111,7 @@ outputs:
         - {{ compiler("c") }}
         - {{ compiler("cxx") }}
         - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
-        - {{ cdt("numactl") }}
+        - {{ cdt("numactl") }}           # [ not aarch64 ]
       host:
         - python
         - pip
