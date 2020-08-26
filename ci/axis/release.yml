@@ -1,6 +1,7 @@
 FROM_IMAGE:
   - condaforge/linux-anvil-cuda
   - condaforge/linux-anvil-comp7
+  - mikewendt/linux-anvil-cuda
 
 CONDA_USERNAME:
   - rapidsai
