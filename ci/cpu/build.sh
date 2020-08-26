@@ -43,7 +43,7 @@ conda config --show-sources
 conda list --show-channel-urls
 
 # Add settings for current CUDA version
-cat .ci_support/linux_64_cuda_compiler_version${CUDA_VER}.yaml >> recipe/conda_build_config.yaml
+cat .ci_support/linux_64_cuda_compiler_version${CUDA_VER}.yaml > recipe/conda_build_config.yaml
 
 # Allow insecure files to work with out conda mirror/proxy
 echo "ssl_verify: false" >> /opt/conda/.condarc
