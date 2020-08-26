@@ -18,14 +18,25 @@ UCX_PY_COMMIT:
   - master
 
 CUDA_VER:
+  - 11.0
   - 10.2
   - 10.1
   - None
 
 exclude:
   - FROM_IMAGE: condaforge/linux-anvil-comp7
+    CUDA_VER: 11.0
+  - FROM_IMAGE: condaforge/linux-anvil-cuda
+    CUDA_VER: 11.0
+  - FROM_IMAGE: condaforge/linux-anvil-comp7
+    CUDA_VER: 10.2
+  - FROM_IMAGE: mikewendt/linux-anvil-cuda
     CUDA_VER: 10.2
   - FROM_IMAGE: condaforge/linux-anvil-comp7
     CUDA_VER: 10.1
+  - FROM_IMAGE: mikewendt/linux-anvil-cuda
+    CUDA_VER: 10.1
   - FROM_IMAGE: condaforge/linux-anvil-cuda
+    CUDA_VER: None
+  - FROM_IMAGE: mikewendt/linux-anvil-cuda
     CUDA_VER: None
