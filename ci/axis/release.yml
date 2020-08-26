@@ -16,7 +16,7 @@ UCX_PROC_VER:
   - 1.0.0
 
 UCX_PY_COMMIT:
-  - master
+  - main
 
 CUDA_VER:
   - 11.0
