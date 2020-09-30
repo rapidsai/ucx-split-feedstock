@@ -69,6 +69,7 @@ outputs:
     requirements:
       build:
         - {{ compiler("c") }}
+        - sysroot_linux-64 2.17          # [linux64 and cuda_compiler_version == "11.0"]
         - {{ compiler("cxx") }}
         - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
         - {{ cdt("numactl-devel") }}     # [ not aarch64 ]
@@ -95,10 +96,10 @@ outputs:
       summary: Unified Communication X.
 
   - name: ucx-py
-    version: "{{ ucx_py_version }}+g{{ ucx_commit }}"
+    version: "{{ ucx_py_version }}"
     build:
       number: {{ ucx_py_number }}
-      string: py{{ py_version }}_{{ ucx_py_number }}
+      string: py{{ py_version }}_g{{ ucx_commit }}_{{ ucx_py_number }}
       skip: true                         # [py<37]
       skip: true                         # [cuda_compiler_version != "None"]
       script_env:
@@ -109,6 +110,7 @@ outputs:
     requirements:
       build:
         - {{ compiler("c") }}
+        - sysroot_linux-64 2.17          # [linux64 and cuda_compiler_version == "11.0"]
         - {{ compiler("cxx") }}
         - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
         - {{ cdt("numactl") }}           # [ not aarch64 ]

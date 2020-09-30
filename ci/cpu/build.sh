@@ -16,7 +16,7 @@ source activate base
 env
 
 # Install gpuCI tools
-curl -s https://raw.githubusercontent.com/rapidsai/gpuci-mgmt/master/gpuci-tools.sh | bash
+curl -s https://raw.githubusercontent.com/rapidsai/gpuci-mgmt/main/gpuci-tools.sh | bash
 source ~/.bashrc
 cd ~
 
@@ -43,7 +43,7 @@ conda config --show-sources
 conda list --show-channel-urls
 
 # Add settings for current CUDA version
-cat .ci_support/linux_64_cuda_compiler_version${CUDA_VER}.yaml >> recipe/conda_build_config.yaml
+cat .ci_support/linux_64_cuda_compiler_version${CUDA_VER}.yaml > recipe/conda_build_config.yaml
 
 # Allow insecure files to work with out conda mirror/proxy
 echo "ssl_verify: false" >> /opt/conda/.condarc
@@ -54,11 +54,11 @@ env
 
 # Start conda build
 gpuci_logger "Starting conda build..."
-conda build --override-channels -c conda-forge -c nvidia .
+conda build --override-channels -c conda-forge -c nvidia -c rapidsai-nightly .
 
 # Get conda build output
 gpuci_logger "Getting conda build output..."
-conda build --override-channels -c conda-forge -c nvidia . --output > conda.output
+conda build --override-channels -c conda-forge -c nvidia -c rapidsai-nightly . --output > conda.output
 
 # Uploda files to anaconda
 if [ ! -z "${MY_UPLOAD_KEY}" ] ; then
