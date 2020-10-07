@@ -14,13 +14,13 @@ source:
 
 build:
   skip: true  # [not linux]
-  number: 0
+  number: 1
 
 outputs:
   - name: ucx-proc
     version: {{ ucx_proc_version }}
     build:
-      number: 0
+      number: 1
       string: "{{ ucx_proc_type }}"
     test:
       commands:
