@@ -1,5 +1,5 @@
 #### START - Config version naming (right side is default value)
-{% set ucx_version = environ.get("UCX_VER", "1.9.0dev").lstrip('v').replace("-", "") %}
+{% set ucx_version = environ.get("UCX_VER", "1.9.0").lstrip('v').replace("-", "") %}
 {% set ucx_number = environ.get("UCX_BUILD_NUMBER", 0) %}
 {% set ucx_proc_version = environ.get("UCX_PROC_VER", "1.0.0") %}
 {% set ucx_py_version = environ.get("UCX_PY_VER", "0.14a").lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
@@ -9,7 +9,7 @@
 #### END - Config version naming
 
 #### START - Config source commits (right side is default value)
-{% set ucx_commit = environ.get("UCX_COMMIT", "cd9efd3") %}
+{% set ucx_commit = environ.get("UCX_COMMIT", "49a7524") %}
 {% set ucx_py_commit = environ.get("UCX_PY_COMMIT", "7cf2144") %}
 #### END - Config source commits
 
