@@ -2,9 +2,9 @@
 
 set -xeuo pipefail
 
-CUDA_CONFIG_ARG=""
+EXTRA_ARGS=""
 if [ "${cuda_compiler_version}" != "None" ]; then
-    CUDA_CONFIG_ARG="--with-cuda=${CUDA_HOME}"
+    EXTRA_ARGS="${EXTRA_ARGS} --with-cuda=${CUDA_HOME}"
 fi
 
 ./autogen.sh
@@ -20,7 +20,7 @@ fi
     --with-cm \
     --with-rdmacm \
     --with-verbs \
-    ${CUDA_CONFIG_ARG}
+    ${EXTRA_ARGS}
 
 make -j${CPU_COUNT}
 make install
