@@ -42,6 +42,8 @@ outputs:
         - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
         - {{ cdt("libnl") }}
         - {{ cdt("libibcm-devel") }}     # [cdt_name == "cos6"]
+        - {{ cdt("libibverbs") }}
+        - {{ cdt("librdmacm") }}
         - {{ cdt("libibverbs-devel") }}  # [cdt_name == "cos6"]
         - {{ cdt("librdmacm-devel") }}   # [cdt_name == "cos6"]
         - {{ cdt("numactl-devel") }}     # [cdt_name != "cos7"]
