@@ -5,11 +5,9 @@ Home: https://github.com/openucx/ucx
 
 Package license: BSD-3-Clause
 
-Feedstock license: BSD-3-Clause
+Feedstock license: [BSD-3-Clause](https://github.com/conda-forge/ucx-split-feedstock/blob/master/LICENSE.txt)
 
 Summary: Unified Communication X.
-
-
 
 Current build status
 ====================
@@ -168,7 +166,4 @@ Feedstock Maintainers
 * [@TomAugspurger](https://github.com/TomAugspurger/)
 * [@jakirkham](https://github.com/jakirkham/)
 * [@quasiben](https://github.com/quasiben/)
-
-
-<!-- dummy commit to enable rerendering -->
 
