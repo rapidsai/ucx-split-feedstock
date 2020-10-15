@@ -44,7 +44,7 @@ outputs:
         - {{ cdt("libibcm-devel") }}     # [cdt_name == "cos6"]
         - {{ cdt("libibverbs-devel") }}  # [cdt_name == "cos6"]
         - {{ cdt("librdmacm-devel") }}   # [cdt_name == "cos6"]
-        - {{ cdt("numactl-devel") }}
+        - {{ cdt("numactl-devel") }}     # [cdt_name != "cos7"]
         - {{ cdt("rdma-core-devel") }}   # [cdt_name == "cos7"]
         - automake
         - autoconf
