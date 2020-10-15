@@ -41,10 +41,11 @@ outputs:
         - {{ compiler("cxx") }}
         - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
         - {{ cdt("libnl") }}
-        - {{ cdt("libibcm-devel") }}
-        - {{ cdt("libibverbs-devel") }}
-        - {{ cdt("librdmacm-devel") }}
+        - {{ cdt("libibcm-devel") }}     # [cdt_name == "cos6"]
+        - {{ cdt("libibverbs-devel") }}  # [cdt_name == "cos6"]
+        - {{ cdt("librdmacm-devel") }}   # [cdt_name == "cos6"]
         - {{ cdt("numactl-devel") }}
+        - {{ cdt("rdma-core-devel") }}   # [cdt_name == "cos7"]
         - automake
         - autoconf
         - libtool
