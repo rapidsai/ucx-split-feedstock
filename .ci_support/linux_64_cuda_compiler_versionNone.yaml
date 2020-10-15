@@ -2,8 +2,6 @@ c_compiler:
 - gcc
 c_compiler_version:
 - '7'
-cdt_name:
-- cos6
 channel_sources:
 - conda-forge,defaults
 channel_targets:
@@ -28,6 +26,7 @@ python:
 target_platform:
 - linux-64
 zip_keys:
-- - cdt_name
-  - cuda_compiler_version
+- - c_compiler_version
+  - cxx_compiler_version
+- - cuda_compiler_version
   - docker_image
