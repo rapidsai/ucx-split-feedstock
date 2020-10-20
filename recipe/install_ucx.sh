@@ -2,6 +2,8 @@
 
 set -xeuo pipefail
 
+echo "Compiler sysroot: $($CC -print-sysroot)"
+
 EXTRA_ARGS=""
 if [ "${cuda_compiler_version}" != "None" ]; then
     EXTRA_ARGS="${EXTRA_ARGS} --with-cuda=${CUDA_HOME}"
