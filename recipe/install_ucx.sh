@@ -17,7 +17,7 @@ fi
     --build="${BUILD}" \
     --host="${HOST}" \
     --prefix="${PREFIX}" \
-    --with-sysroot="$(${CC} -print-sysroot)/usr" \
+    --with-sysroot="$(${CC} -print-sysroot)" \
     --enable-cma \
     --enable-mt \
     --enable-numa \
