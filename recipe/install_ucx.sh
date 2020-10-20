@@ -2,8 +2,6 @@
 
 set -xeuo pipefail
 
-echo "Compiler sysroot: $($CC -print-sysroot)"
-
 EXTRA_ARGS=""
 if [ "${cuda_compiler_version}" != "None" ]; then
     EXTRA_ARGS="${EXTRA_ARGS} --with-cuda=${CUDA_HOME}"
@@ -17,7 +15,7 @@ fi
     --build="${BUILD}" \
     --host="${HOST}" \
     --prefix="${PREFIX}" \
-    --with-sysroot="$(${CC} -print-sysroot)" \
+    --with-sysroot \
     --enable-cma \
     --enable-mt \
     --enable-numa \
