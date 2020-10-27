@@ -16,7 +16,7 @@ index b612ddeb5..850be0e53 100644
  libucs_la_LIBADD   = $(LIBM) $(top_builddir)/src/ucm/libucm.la
  
 diff --git a/src/ucs/memory/rcache.c b/src/ucs/memory/rcache.c
-index 6ae0c8b01..d54d22738 100644
+index 6ae0c8b01..263bfa658 100644
 --- a/src/ucs/memory/rcache.c
 +++ b/src/ucs/memory/rcache.c
 @@ -19,6 +19,7 @@
@@ -27,7 +27,7 @@ index 6ae0c8b01..d54d22738 100644
  
  #include "rcache.h"
  #include "rcache_int.h"
-@@ -651,6 +652,24 @@ ucs_rcache_create_region(ucs_rcache_t *rcache, void *address, size_t length,
+@@ -651,6 +652,30 @@ ucs_rcache_create_region(ucs_rcache_t *rcache, void *address, size_t length,
      ucs_pgt_addr_t start, end;
      ucs_status_t status;
      int error, merged;
@@ -35,6 +35,7 @@ index 6ae0c8b01..d54d22738 100644
 +    CUdeviceptr pbase;
 +    size_t psize;
 +    unsigned value       = 1;
++    int is_managed       = 0;
 +    CUresult cu_err;
 +
 +    mem_type = UCS_MEMORY_TYPE_HOST;
@@ -44,7 +45,12 @@ index 6ae0c8b01..d54d22738 100644
 +                                   (CUdeviceptr)address);
 +    if (cu_err == CUDA_SUCCESS) {
 +        if (value == CU_MEMORYTYPE_DEVICE) {
-+            mem_type = UCS_MEMORY_TYPE_CUDA;
++
++            cuPointerGetAttribute((void *)&is_managed,
++                                  CU_POINTER_ATTRIBUTE_IS_MANAGED,
++                                  (CUdeviceptr)address);
++            mem_type = (is_managed) ?
++                UCS_MEMORY_TYPE_CUDA_MANAGED : UCS_MEMORY_TYPE_CUDA;
 +        } else {
 +            mem_type = UCS_MEMORY_TYPE_LAST;
 +        }
@@ -52,7 +58,7 @@ index 6ae0c8b01..d54d22738 100644
  
      ucs_trace_func("rcache=%s, address=%p, length=%zu", rcache->name, address,
                     length);
-@@ -658,11 +677,22 @@ ucs_rcache_create_region(ucs_rcache_t *rcache, void *address, size_t length,
+@@ -658,11 +683,24 @@ ucs_rcache_create_region(ucs_rcache_t *rcache, void *address, size_t length,
      pthread_rwlock_wrlock(&rcache->pgt_lock);
  
  retry:
@@ -67,8 +73,10 @@ index 6ae0c8b01..d54d22738 100644
 +            return UCS_ERR_IO_ERROR;
 +        }
 +        address = (void *) pbase;
-+        start  = (uintptr_t)address;
-+        end    = (uintptr_t)address + psize;
++        start  = ucs_align_down_pow2((uintptr_t)address,
++                rcache->params.alignment);
++        end    = ucs_align_up_pow2  ((uintptr_t)address + psize,
++                rcache->params.alignment);
 +    } else {
 +        /* Align to page size */
 +        start  = ucs_align_down_pow2((uintptr_t)address,
