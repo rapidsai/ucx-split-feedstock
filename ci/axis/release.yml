@@ -1,6 +1,6 @@
 FROM_IMAGE:
-  - condaforge/linux-anvil-cuda
-  - condaforge/linux-anvil-comp7
+  - quay.io/condaforge/linux-anvil-cuda
+  - quay.io/condaforge/linux-anvil-comp7
 
 CONDA_USERNAME:
   - rapidsai
@@ -24,11 +24,11 @@ CUDA_VER:
   - None
 
 exclude:
-  - FROM_IMAGE: condaforge/linux-anvil-comp7
+  - FROM_IMAGE: quay.io/condaforge/linux-anvil-comp7
     CUDA_VER: 11.0
-  - FROM_IMAGE: condaforge/linux-anvil-comp7
+  - FROM_IMAGE: quay.io/condaforge/linux-anvil-comp7
     CUDA_VER: 10.2
-  - FROM_IMAGE: condaforge/linux-anvil-comp7
+  - FROM_IMAGE: quay.io/condaforge/linux-anvil-comp7
     CUDA_VER: 10.1
-  - FROM_IMAGE: condaforge/linux-anvil-cuda
+  - FROM_IMAGE: quay.io/condaforge/linux-anvil-cuda
     CUDA_VER: None
