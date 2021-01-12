@@ -95,10 +95,10 @@ outputs:
       summary: Unified Communication X.
 
   - name: ucx-py
-    version: "{{ ucx_py_version }}+g{{ ucx_commit }}"
+    version: "{{ ucx_py_version }}"
     build:
       number: {{ ucx_py_number }}
-      string: py{{ py_version }}_{{ ucx_py_number }}
+      string: py{{ py_version }}_g{{ ucx_commit }}_{{ ucx_py_number }}
       skip: true                         # [py<37]
       skip: true                         # [cuda_compiler_version != "None"]
       script_env:
@@ -117,7 +117,7 @@ outputs:
         - python
         - pip
         - cython >=0.29.14,<3.0.0a0
-        - libhwloc
+        - libhwloc >=2.3.0,<2.4.0a0
         - ucx
       run:
         - python
