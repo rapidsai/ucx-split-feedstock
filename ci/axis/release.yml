@@ -1,16 +1,15 @@
 FROM_IMAGE:
-  - condaforge/linux-anvil-cuda
-  - condaforge/linux-anvil-comp7
-  - mikewendt/linux-anvil-cuda
+  - quay.io/condaforge/linux-anvil-cuda
+  - quay.io/condaforge/linux-anvil-comp7
 
 CONDA_USERNAME:
   - rapidsai
 
 UCX_VER:
-  - 1.8.0dev
+  - 1.10.0
 
 UCX_COMMIT:
-  - v1.8.x
+  - v1.10.0-rc1
 
 UCX_PROC_VER:
   - 1.0.0
@@ -25,19 +24,11 @@ CUDA_VER:
   - None
 
 exclude:
-  - FROM_IMAGE: condaforge/linux-anvil-comp7
+  - FROM_IMAGE: quay.io/condaforge/linux-anvil-comp7
     CUDA_VER: 11.0
-  - FROM_IMAGE: condaforge/linux-anvil-cuda
-    CUDA_VER: 11.0
-  - FROM_IMAGE: condaforge/linux-anvil-comp7
+  - FROM_IMAGE: quay.io/condaforge/linux-anvil-comp7
     CUDA_VER: 10.2
-  - FROM_IMAGE: mikewendt/linux-anvil-cuda
-    CUDA_VER: 10.2
-  - FROM_IMAGE: condaforge/linux-anvil-comp7
+  - FROM_IMAGE: quay.io/condaforge/linux-anvil-comp7
     CUDA_VER: 10.1
-  - FROM_IMAGE: mikewendt/linux-anvil-cuda
-    CUDA_VER: 10.1
-  - FROM_IMAGE: condaforge/linux-anvil-cuda
-    CUDA_VER: None
-  - FROM_IMAGE: mikewendt/linux-anvil-cuda
+  - FROM_IMAGE: quay.io/condaforge/linux-anvil-cuda
     CUDA_VER: None

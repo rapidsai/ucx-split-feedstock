@@ -2,9 +2,9 @@
 
 set -xeuo pipefail
 
-CUDA_CONFIG_ARG=""
-if [ ${cuda_compiler_version} != "None" ]; then
-    CUDA_CONFIG_ARG="--with-cuda=${CUDA_HOME}"
+EXTRA_ARGS=""
+if [ "${cuda_compiler_version}" != "None" ]; then
+    EXTRA_ARGS="${EXTRA_ARGS} --with-cuda=${CUDA_HOME}"
 fi
 
 cd "${SRC_DIR}/ucx"
@@ -18,7 +18,7 @@ cd "${SRC_DIR}/ucx"
     --enable-mt \
     --enable-numa \
     --with-gnu-ld \
-    ${CUDA_CONFIG_ARG}
+    ${EXTRA_ARGS}
 
 make -j${CPU_COUNT}
 make install
