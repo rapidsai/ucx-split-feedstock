@@ -1,7 +1,6 @@
-{% set ucx_version = "1.7.0-rc1" %}
+{% set ucx_version = "1.9.0" %}
 {% set ucx_proc_version = "1.0.0" %}
-{% set ucx_py_version = "0.4" %}
-{% set number = "3" %}
+{% set number = "0" %}
 
 {% set ucx_proc_type = "cpu" if cuda_compiler_version == "None" else "gpu" %}
 
@@ -10,28 +9,18 @@ package:
   name: ucx-split
 
 source:
-  - url: https://github.com/openucx/ucx/archive/v{{ ucx_version }}.tar.gz
-    sha256: a9598abd5c697e4a49a512b285c5747413d1f45155a12ecb1f5ee389c0459afa
-    folder: ucx
-    patches:
-      - patches/PR_4383.patch
-      - patches/PR_4384.patch
-      - patches/PR_4515.patch
-      - patches/PR_4530.patch
-      - patches/PR_4533.patch
-  - url: https://github.com/rapidsai/ucx-py/archive/{{ ucx_py_version }}.tar.gz
-    sha256: 21194ce91aa27073dc94198ace1786e985738a069f4d318c96192f288b69e294
-    folder: ucx-py
+  url: https://github.com/openucx/ucx/archive/v{{ ucx_version }}.tar.gz
+  sha256: 36d0f6b8a7948361082f65be67b4c6336ebf2db62d717f253206ec7276a29086
 
 build:
   skip: true  # [not linux]
-  number: 0
+  number: 1
 
 outputs:
   - name: ucx-proc
     version: {{ ucx_proc_version }}
     build:
-      number: 0
+      number: 1
       string: "{{ ucx_proc_type }}"
     test:
       commands:
@@ -43,7 +32,7 @@ outputs:
       summary: A meta-package to select CPU or GPU UCX build.
 
   - name: ucx
-    version: {{ ucx_version|replace("-", "") }}
+    version: {{ ucx_version }}
     build:
       number: {{ number }}
     requirements:
@@ -51,11 +40,13 @@ outputs:
         - {{ compiler("c") }}
         - {{ compiler("cxx") }}
         - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
-        - {{ cdt("libnl") }}
-        - {{ cdt("libibcm-devel") }}
-        - {{ cdt("libibverbs-devel") }}
-        - {{ cdt("librdmacm-devel") }}
+        - {{ cdt("libnl") }}             # [cdt_name == "cos6"]
+        - {{ cdt("libnl3") }}            # [cdt_name == "cos7"]
+        - {{ cdt("libibcm-devel") }}     # [cdt_name == "cos6"]
+        - {{ cdt("libibverbs-devel") }}  # [cdt_name == "cos6"]
+        - {{ cdt("librdmacm-devel") }}   # [cdt_name == "cos6"]
         - {{ cdt("numactl-devel") }}
+        - {{ cdt("rdma-core-devel") }}   # [cdt_name == "cos7"]
         - automake
         - autoconf
         - libtool
@@ -74,46 +65,8 @@ outputs:
       home: https://github.com/openucx/ucx
       license: BSD-3-Clause
       license_family: BSD
-      license_file: ucx/LICENSE
+      license_file: LICENSE
       summary: Unified Communication X.
-
-  - name: ucx-py
-    version: "{{ ucx_py_version }}"
-    build:
-      number: {{ number }}
-      skip: true  # [py<36]
-    requirements:
-      build:
-        - {{ compiler("c") }}
-        - {{ compiler("cxx") }}
-        - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
-        - {{ cdt("libnl") }}
-        - {{ cdt("libibcm") }}
-        - {{ cdt("libibverbs") }}
-        - {{ cdt("librdmacm") }}
-      host:
-        - python
-        - pip
-        - cython
-        - libhwloc
-        - ucx
-      run:
-        - python
-        - numpy
-        - libhwloc
-        - {{ pin_subpackage("ucx", exact=True) }}
-      run_constrained:
-        - ucx-proc * {{ ucx_proc_type }}
-    script: install_ucx-py.sh
-    test:
-      imports:
-        - ucp
-    about:
-      home: https://github.com/rapidsai/ucx-py
-      license: BSD-3-Clause
-      license_family: BSD
-      license_file: ucx-py/LICENSE
-      summary: Python bindings for UCX
 
 about:
   home: https://github.com/openucx/ucx

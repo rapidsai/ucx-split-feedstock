@@ -2,26 +2,27 @@
 
 set -xeuo pipefail
 
-export CONDA_BUILD_SYSROOT="$(${CC} --print-sysroot)"
-
-export CFLAGS="${CFLAGS} -I${CONDA_BUILD_SYSROOT}/usr/include"
-export LDFLAGS="${LDFLAGS} -L${CONDA_BUILD_SYSROOT}/usr/lib64"
-
-CUDA_CONFIG_ARG=""
-if [ ${cuda_compiler_version} != "None" ]; then
-    CUDA_CONFIG_ARG="--with-cuda=${CUDA_HOME}"
+EXTRA_ARGS=""
+if [ "${cuda_compiler_version}" != "None" ]; then
+    EXTRA_ARGS="${EXTRA_ARGS} --with-cuda=${CUDA_HOME}"
+fi
+if [ "${cdt_name}" == "cos6" ]; then
+    EXTRA_ARGS="${EXTRA_ARGS} --with-cm"
 fi
 
-cd "${SRC_DIR}/ucx"
 ./autogen.sh
 ./configure \
     --build="${BUILD}" \
     --host="${HOST}" \
     --prefix="${PREFIX}" \
+    --with-sysroot \
+    --enable-cma \
     --enable-mt \
+    --enable-numa \
     --with-gnu-ld \
     --with-rdmacm \
-    ${CUDA_CONFIG_ARG}
+    --with-verbs \
+    ${EXTRA_ARGS}
 
 make -j${CPU_COUNT}
 make install
