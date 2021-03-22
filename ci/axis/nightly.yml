@@ -18,12 +18,15 @@ UCX_PY_COMMIT:
   - branch-0.19
 
 CUDA_VER:
+  - 11.2
   - 11.0
   - 10.2
   - 10.1
   - None
 
 exclude:
+  - FROM_IMAGE: quay.io/condaforge/linux-anvil-comp7
+    CUDA_VER: 11.2
   - FROM_IMAGE: quay.io/condaforge/linux-anvil-comp7
     CUDA_VER: 11.0
   - FROM_IMAGE: quay.io/condaforge/linux-anvil-comp7
