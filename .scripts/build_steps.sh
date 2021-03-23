@@ -38,7 +38,7 @@ source run_conda_forge_build_setup
 # "recipe/yum_requirements.txt" file. After updating that file,
 # run "conda smithy rerender" and this line will be updated
 # automatically.
-/usr/bin/sudo -n yum install -y libibcm-devel libibverbs-devel librdmacm-devel numactl-devel rdma-core-devel
+/usr/bin/sudo -n yum install -y numactl-devel
 
 
 # make the build number clobber

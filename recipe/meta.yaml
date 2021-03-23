@@ -1,6 +1,17 @@
-{% set ucx_version = "1.9.0" %}
-{% set ucx_proc_version = "1.0.0" %}
-{% set number = "0" %}
+#### START - Config version naming (right side is default value)
+{% set ucx_version = environ.get("UCX_VER", "v1.9.0").lstrip('v').replace("-", "") %}
+{% set ucx_number = environ.get("UCX_BUILD_NUMBER", 0) %}
+{% set ucx_proc_version = environ.get("UCX_PROC_VER", "1.0.0") %}
+{% set ucx_py_version = environ.get("UCX_PY_VER", "0.14a").lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
+{% set ucx_py_number = environ.get("UCX_PY_BUILD_NUMBER", 0) %}
+{% set cuda_version = '.'.join(environ.get('CUDA_VER', '9.2').split('.')[:2]) %}
+{% set py_version = environ.get('CONDA_PY', '37') %}
+#### END - Config version naming
+
+#### START - Config source commits (right side is default value)
+{% set ucx_commit = environ.get("UCX_COMMIT", "cd9efd3") %}
+{% set ucx_py_commit = environ.get("UCX_PY_COMMIT", "7cf2144") %}
+#### END - Config source commits
 
 {% set ucx_proc_type = "cpu" if cuda_compiler_version == "None" else "gpu" %}
 
@@ -9,18 +20,34 @@ package:
   name: ucx-split
 
 source:
-  url: https://github.com/openucx/ucx/archive/v{{ ucx_version }}.tar.gz
-  sha256: 36d0f6b8a7948361082f65be67b4c6336ebf2db62d717f253206ec7276a29086
+  - git_url: https://github.com/openucx/ucx
+    git_rev: {{ ucx_commit }}
+    folder: ucx
+    patches:
+      - cuda-alloc-rcache.patch  # [cuda_compiler_version != "None"]
+  - git_url: https://github.com/rapidsai/ucx-py
+    git_rev: {{ ucx_py_commit }}
+    folder: ucx-py
 
 build:
   skip: true  # [not linux]
-  number: 2
+  skip: true  # [cuda_compiler_version == "9.2"]
+  skip: true  # [cuda_compiler_version == "10.0"]
+  number: 0
+  script_env:
+    - UCX_VER
+    - UCX_COMMIT
+    - UCX_BUILD_NUMBER
+    - UCX_PROC_VER
+    - UCX_PY_VER
+    - UCX_PY_COMMIT
+    - UCX_PY_BUILD_NUMBER
 
 outputs:
   - name: ucx-proc
     version: {{ ucx_proc_version }}
     build:
-      number: 2
+      number: 0
       string: "{{ ucx_proc_type }}"
     test:
       commands:
@@ -32,24 +59,23 @@ outputs:
       summary: A meta-package to select CPU or GPU UCX build.
 
   - name: ucx
-    version: {{ ucx_version }}
+    version: "{{ ucx_version }}+g{{ ucx_commit }}"
+
     build:
-      number: {{ number }}
+      number: {{ ucx_number }}
+      string: cuda{{ cuda_version }}_{{ ucx_number }} # [cuda_compiler_version != "None"]
+      script_env:
+        - CUDA_HOME # [cuda_compiler_version != "None"]
     requirements:
       build:
         - {{ compiler("c") }}
         - {{ compiler("cxx") }}
         - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
-        - {{ cdt("libnl") }}             # [cdt_name == "cos6"]
-        - {{ cdt("libnl3") }}            # [cdt_name == "cos7"]
-        - {{ cdt("libibcm-devel") }}     # [cdt_name == "cos6"]
-        - {{ cdt("libibverbs-devel") }}  # [cdt_name == "cos6"]
-        - {{ cdt("librdmacm-devel") }}   # [cdt_name == "cos6"]
         - {{ cdt("numactl-devel") }}
-        - {{ cdt("rdma-core-devel") }}   # [cdt_name == "cos7"]
         - automake
         - autoconf
         - libtool
+        - libgomp      # [linux and not aarch64]
         - make
         - pkg-config
       host:
@@ -65,8 +91,45 @@ outputs:
       home: https://github.com/openucx/ucx
       license: BSD-3-Clause
       license_family: BSD
-      license_file: LICENSE
+      license_file: ucx/LICENSE
       summary: Unified Communication X.
+
+  - name: ucx-py
+    version: "{{ ucx_py_version }}"
+    build:
+      number: {{ ucx_py_number }}
+      string: py{{ py_version }}_g{{ ucx_commit }}_{{ ucx_py_number }}
+      skip: true                         # [py<37]
+      skip: true                         # [cuda_compiler_version != "None"]
+      script_env:
+        - CUDA_HOME                      # [cuda_compiler_version != "None"]
+      ignore_run_exports:
+        - cudatoolkit                    # [cuda_compiler_version != "None"]
+
+    requirements:
+      build:
+        - {{ compiler("c") }}
+        - {{ compiler("cxx") }}
+        - {{ compiler("cuda") }}         # [cuda_compiler_version != "None"]
+        - {{ cdt("numactl") }}
+      host:
+        - python
+        - pip
+        - cython >=0.29.14,<3.0.0a0
+        - libhwloc >=2.3.0,<2.4.0a0
+        - ucx
+      run:
+        - python
+        - numpy
+        - psutil
+        - ucx {{ ucx_version }}+g{{ ucx_commit }}
+    script: install_ucx-py.sh
+    about:
+      home: https://github.com/rapidsai/ucx-py
+      license: BSD-3-Clause
+      license_family: BSD
+      license_file: ucx-py/LICENSE
+      summary: Python bindings for UCX
 
 about:
   home: https://github.com/openucx/ucx
@@ -77,7 +140,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - Akshay-Venkatesh
     - jakirkham
+    - mike-wendt
+    - pentschev
     - quasiben
-    - TomAugspurger

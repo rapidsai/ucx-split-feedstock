@@ -1,0 +1,37 @@
+FROM_IMAGE:
+  - quay.io/condaforge/linux-anvil-cuda
+  - quay.io/condaforge/linux-anvil-comp7
+
+CONDA_USERNAME:
+  - rapidsai-nightly
+
+UCX_VER:
+  - 1.9.0
+
+UCX_COMMIT:
+  - v1.9.0
+
+UCX_PROC_VER:
+  - 1.0.0
+
+UCX_PY_COMMIT:
+  - branch-0.19
+
+CUDA_VER:
+  - 11.2
+  - 11.0
+  - 10.2
+  - 10.1
+  - None
+
+exclude:
+  - FROM_IMAGE: quay.io/condaforge/linux-anvil-comp7
+    CUDA_VER: 11.2
+  - FROM_IMAGE: quay.io/condaforge/linux-anvil-comp7
+    CUDA_VER: 11.0
+  - FROM_IMAGE: quay.io/condaforge/linux-anvil-comp7
+    CUDA_VER: 10.2
+  - FROM_IMAGE: quay.io/condaforge/linux-anvil-comp7
+    CUDA_VER: 10.1
+  - FROM_IMAGE: quay.io/condaforge/linux-anvil-cuda
+    CUDA_VER: None
