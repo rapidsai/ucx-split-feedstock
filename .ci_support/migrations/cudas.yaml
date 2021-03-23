@@ -19,6 +19,11 @@ __migrator:
       - 8
       - 7
 
+c_compiler_version:            # [linux]
+  - 7                          # [linux64]
+cxx_compiler_version:          # [linux]
+  - 7                          # [linux64]
+
 cuda_compiler_version:
   - None
   - 10.2                       # [linux64]
