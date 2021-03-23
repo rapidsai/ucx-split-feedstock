@@ -20,6 +20,10 @@ jobs:
         CONFIG: linux_64_cuda_compiler_version11.0
         UPLOAD_PACKAGES: 'True'
         DOCKER_IMAGE: quay.io/condaforge/linux-anvil-cuda:11.0
+      linux_64_cuda_compiler_version11.2:
+        CONFIG: linux_64_cuda_compiler_version11.2
+        UPLOAD_PACKAGES: 'True'
+        DOCKER_IMAGE: quay.io/condaforge/linux-anvil-cuda:11.2
       linux_64_cuda_compiler_versionNone:
         CONFIG: linux_64_cuda_compiler_versionNone
         UPLOAD_PACKAGES: 'True'
@@ -48,3 +52,5 @@ jobs:
     displayName: Run docker build
     env:
       BINSTAR_TOKEN: $(BINSTAR_TOKEN)
+      FEEDSTOCK_TOKEN: $(FEEDSTOCK_TOKEN)
+      STAGING_BINSTAR_TOKEN: $(STAGING_BINSTAR_TOKEN)
