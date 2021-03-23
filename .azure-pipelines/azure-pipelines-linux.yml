@@ -11,7 +11,7 @@ jobs:
       linux_64_cuda_compiler_version10.1:
         CONFIG: linux_64_cuda_compiler_version10.1
         UPLOAD_PACKAGES: 'True'
-        DOCKER_IMAGE: quay.io/condaforge/linux-anvil-cos7-cuda:10.1
+        DOCKER_IMAGE: quay.io/condaforge/linux-anvil-cuda:10.1
       linux_64_cuda_compiler_version10.2:
         CONFIG: linux_64_cuda_compiler_version10.2
         UPLOAD_PACKAGES: 'True'
@@ -27,7 +27,7 @@ jobs:
       linux_64_cuda_compiler_versionNone:
         CONFIG: linux_64_cuda_compiler_versionNone
         UPLOAD_PACKAGES: 'True'
-        DOCKER_IMAGE: quay.io/condaforge/linux-anvil-cos7-x86_64
+        DOCKER_IMAGE: quay.io/condaforge/linux-anvil-comp7
   timeoutInMinutes: 360
 
   steps:
