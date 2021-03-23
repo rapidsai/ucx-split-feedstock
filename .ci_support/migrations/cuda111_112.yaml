@@ -12,6 +12,16 @@ __migrator:
   use_local: true
   check_solvable: false
   primary_key: cuda_compiler_version
+  ordering:
+    cuda_compiler_version:
+      - None
+      - 9.2
+      - 10.0
+      - 10.1
+      - 10.2
+      - 11.0
+      - 11.1
+      - 11.2
 
 cuda_compiler_version:         # [linux64 or win]
   - 11.1                       # [linux64 or win]
