@@ -41,7 +41,7 @@ cudnn:
 cdt_name:  # [linux]
   - cos6   # [linux64]
   - cos6   # [linux64]
-  - cos7   # [linux64]
+  - cos6   # [linux64]
   - cos7   # [linux64]
   - cos7   # [linux64]
 
