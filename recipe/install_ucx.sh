@@ -19,6 +19,7 @@ cd "${SRC_DIR}/ucx"
     --enable-numa \
     --with-gnu-ld \
     ${EXTRA_ARGS}
+cat config.log
 
 make -j${CPU_COUNT}
 make install
